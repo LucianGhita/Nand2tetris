@@ -14,4 +14,6 @@ CHIP Inc16 {
 
     PARTS:
    // Put you code here:
+    Or16(a=false, b[0]=true, out=orOut);
+    Add16(a=in, b=orOut, out=out);
 }
