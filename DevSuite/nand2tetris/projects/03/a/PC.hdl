@@ -17,4 +17,15 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
+    
+    // at t+1 we will have the outIncr 
+   
+   Mux16(a=outReg, b=outInc, sel=inc, out=outMuxInc);
+   Inc16(in=outReg, out=outInc);
+   Mux16(a=outMuxInc, b=in, sel=load, out=outMuxLoad);
+   Mux16(a=outMuxLoad, b=false, sel=reset, out=outMuxReset);
+   Register(in=outMuxReset, load=true, out=out, out=outReg); 
+
+
+
 }
