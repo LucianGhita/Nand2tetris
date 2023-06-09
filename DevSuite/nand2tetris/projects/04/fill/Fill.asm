@@ -12,14 +12,17 @@
 // the screen should remain fully clear as long as no key is pressed.
 
 // Put your code here.
-
-(READKBD)
+(STARTPROGRAM)
 @KBD
 D=M
+
+@DRAWBLACK
+D;JGT
+
 @CLEARSCREEN
 D;JEQ
 
-@DRAWBLACK
+@STARTPROGRAM
 0;JMP
 
 (DRAWBLACK)
@@ -39,12 +42,16 @@ M=D
 M=0
 
 (LOOP)
+@KBD
+D=M
+@CLEARSCREEN
+D;JEQ
 
 @addr
 D=M
 @n
 D=D-M
-@READKBD
+@STARTPROGRAM
 D;JGT
 
 @addr
@@ -54,22 +61,11 @@ M=-1
 @addr
 M=M+1
 
-@KBD
-D=M
-@READKBD
-D;JEQ
-
 @LOOP
 0;JMP
 
-(END)
-@END
-0;JMP
-
-
-
-
 (CLEARSCREEN)
+
 @SCREEN
 D=A
 
@@ -86,14 +82,17 @@ M=D
 M=0
 
 (LOOPCLEAR)
-
+@KBD
+D=M
+@DRAWBLACK
+D;JGT
 
 @addr
 D=M
 @n
 D=D-M
-@READKBD
-D;JGT
+@STARTPROGRAM
+D;JEQ
 
 @addr
 A=M
@@ -102,11 +101,7 @@ M=0
 @addr
 M=M+1
 
-@KBD
-D=M
-@READKBD
-D;JEQ
-
 @LOOPCLEAR
 0;JMP
+
 
