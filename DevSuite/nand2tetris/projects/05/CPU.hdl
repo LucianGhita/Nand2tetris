@@ -40,4 +40,32 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+
+    
+    // handling C instruction
+    Not(in=instruction[0], out=isCInstruction);
+    Register(in=outAMux, load=isCInstruction, out=cInstruction);
+    
+    
+    // handling A instruction
+    Mux16(a=outM, b=instruction, sel=instruction[0], out=outAMux);
+    Register(in=outAMux, load=instruction[10], out=outAReg);
+
+    // dRegister
+    Register(in=outM, load=instruction[11], out=outD);
+    
+    // second entry in the alu (a register or inM) if it is a c instruction, then use data value as input for alu
+    Mux16(a=outAReg, b=inM, sel=isCInstruction, out=outMux);
+    
+    // PC and reset 
+    // the load part and inc should be done according with the jump bits and result from the alu, zr and ng
+    // somehow get the jump bits and compare them with zr and ng, 
+    // for example 001 jump if out of alu is > 0 ng should be 0 so 0 0 1 and 0 should be 0
+    // maybe manipulating zr and ng somehow in order to get all the posibilities and compare them one by one with the jump bits ?? 
+    PC(in=outAReg, load=, inc=, reset=reset, out=pc);
+
+    
+
+    ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=outz, ng=outn);
+
 }
