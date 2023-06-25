@@ -62,10 +62,71 @@ CHIP CPU {
     // somehow get the jump bits and compare them with zr and ng, 
     // for example 001 jump if out of alu is > 0 ng should be 0 so 0 0 1 and 0 should be 0
     // maybe manipulating zr and ng somehow in order to get all the posibilities and compare them one by one with the jump bits ?? 
-    PC(in=outAReg, load=, inc=, reset=reset, out=pc);
+        
+    Not(in=instruction[13], out=notJ1);
+    Not(in=instruction[14], out=notJ2);
+    Not(in=instruction[15], out=notJ3);
 
+    //NULL
+    And(a=notJ1, b=NotJ2, out=AndNotJ1NotJ2);
+    And(a=NotJ3, b=NotJ1J2, out=NullOut)
+
+    //JGT
+    And(a=AndNotJ1NotJ2, b=instruction[15], out=JGTOut)
+
+    //JEQ
+    And(a=NotJ1, b=NotJ3, out=AndNotJ1NotJ3);
+    And(a=AndNotJ1NotJ3, b=instruction[14], out=JEQOut);
+
+    //JGE
+    And(a=instruction[14], b=instruction[15], out=AndJ2J3);
+    And(a=AndJ2J3, b=notJ1, out=JGEOut);
+
+    //JLT
+    And(a=NotJ2, b=NotJ3, out=AndNotJ2NotJ3);
+    And(a=AndNotJ2NotJ3, b=instruction[13], out=JLTOut);
+
+    //JNE
+    And(a=instruction[13], b=instruction[15], out=AndJ1J3);
+    And(a=AndJ1J3, b=NotJ2, out=JNEOut);
+
+    //JLE
+    And(a=instruction[13], b=instruction[14], out=AndJ1J2);
+    And(a=AndJ1J2, b=NotJ3, out=JLEOut);
+
+    //JMP
+    And(a=AndJ1J2, b=instruction[15], out=JMPOut);
     
 
-    ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=outz, ng=outn);
 
+    PC(in=outAReg, load=, inc=outJReg, reset=reset, out=pc);
+    
+
+    ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=zr, ng=ng);
+
+    Not(in=zr, out=Notzr);
+    Not(in=ng, out=Notng);
+
+    // Check if is jump greater
+    And(a=Notzr, b=Notng, out=AndNotzrNotng);
+    And(a=AndNotzrNotng, b=JGTOut, out=JumpJGT);
+
+    // Check if is jump equals 0
+    And(a=Notng, b=zr, out=AndNotngZr);
+    And(a=AndNotngZr, b=JEQOut, out=JumpJEQ);
+
+    // Check if is Jump greater or equals
+    Or(a=JumpJGT, b=JumpJEQ, out=JumpJGE);
+
+    // Check if is Jump less than zero
+    And(a=Notzr, b=ng, out=AndNotzrNg);
+    And(a=AndNotzrNg, b=JLTOut, out=JumpJLT);
+
+    // Check if is Jump different than 0
+    Or(a=JumpJGT, b=JumpJLT, out=JumpJNE);
+
+    // Check if less or equals
+    Or(a=JumpJLT, b=JumpJEQ, out=JumpJLE);
+    
+    // JMP as well
 }
