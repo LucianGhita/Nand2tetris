@@ -44,60 +44,57 @@ CHIP CPU {
     
     // handling C instruction
     Not(in=instruction[0], out=isCInstruction);
-    Register(in=outAMux, load=isCInstruction, out=cInstruction);
-    
+
+    // ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=zr, ng=ng);
     
     // handling A instruction
-    Mux16(a=outM, b=instruction, sel=instruction[0], out=outAMux);
-    Register(in=outAMux, load=instruction[10], out=outAReg, out=addressM);
+    
+    Mux16(a=outMInputs, b=instruction, sel=isCInstruction, out=outAMux);
+    
+    ARegister(in=outAMux, load=instruction[10], out=outAReg, out[1..15]=addressM, out[0]=opCode, out[4]=zx, out[5]=nx, out[6]=zy, out[7]=ny, out[8]=f, out[9]=no, out[10]=cA, out[11]=cD, out[12]=writeM, out[13]=J1, out[14]=J2, out[15]=J3);
 
     // dRegister
-    Register(in=outM, load=instruction[11], out=outD);
+    DRegister(in=outMInputs, load=cD, out=outD);
     
     // second entry in the alu (a register or inM) if it is a c instruction, then use data value as input for alu
     Mux16(a=outAReg, b=inM, sel=isCInstruction, out=outMux);
     
-    // PC and reset 
-    // the load part and inc should be done according with the jump bits and result from the alu, zr and ng
-    // somehow get the jump bits and compare them with zr and ng, 
-    // for example 001 jump if out of alu is > 0 ng should be 0 so 0 0 1 and 0 should be 0
-    // maybe manipulating zr and ng somehow in order to get all the posibilities and compare them one by one with the jump bits ?? 
-        
-    Not(in=instruction[13], out=notJ1);
-    Not(in=instruction[14], out=notJ2);
-    Not(in=instruction[15], out=notJ3);
+    // Jump bits and result      
+    Not(in=J1, out=NotJ1);
+    Not(in=J2, out=NotJ2);
+    Not(in=J3, out=NotJ3);
 
     //NULL
-    And(a=notJ1, b=NotJ2, out=AndNotJ1NotJ2);
-    And(a=NotJ3, b=NotJ1J2, out=NullOut)
+    And(a=NotJ1, b=NotJ2, out=AndNotJ1NotJ2);
+    And(a=NotJ3, b=AndNotJ1NotJ2, out=NullOut);
 
     //JGT
-    And(a=AndNotJ1NotJ2, b=instruction[15], out=JGTOut)
+    And(a=AndNotJ1NotJ2, b=J3, out=JGTOut);
 
     //JEQ
     And(a=NotJ1, b=NotJ3, out=AndNotJ1NotJ3);
-    And(a=AndNotJ1NotJ3, b=instruction[14], out=JEQOut);
+    And(a=AndNotJ1NotJ3, b=J2, out=JEQOut);
 
     //JGE
-    And(a=instruction[14], b=instruction[15], out=AndJ2J3);
-    And(a=AndJ2J3, b=notJ1, out=JGEOut);
+    And(a=J2, b=J3, out=AndJ2J3);
+    And(a=AndJ2J3, b=NotJ1, out=JGEOut);
 
     //JLT
     And(a=NotJ2, b=NotJ3, out=AndNotJ2NotJ3);
-    And(a=AndNotJ2NotJ3, b=instruction[13], out=JLTOut);
+    And(a=AndNotJ2NotJ3, b=J1, out=JLTOut);
 
     //JNE
-    And(a=instruction[13], b=instruction[15], out=AndJ1J3);
+    And(a=J1, b=J3, out=AndJ1J3);
     And(a=AndJ1J3, b=NotJ2, out=JNEOut);
 
     //JLE
-    And(a=instruction[13], b=instruction[14], out=AndJ1J2);
+    And(a=J1, b=J2, out=AndJ1J2);
     And(a=AndJ1J2, b=NotJ3, out=JLEOut);
 
     //JMP
-    And(a=AndJ1J2, b=instruction[15], out=JumpJMP);
+    And(a=AndJ1J2, b=J3, out=JumpJMP);
     
-    ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=zr, ng=ng);
+    ALU(x=outD, y=outMux, zx=zx, nx=nx, zy=zy, ny=ny, f=f, no=no, out=outM, zr=zr, ng=ng, out=outMInputs);
 
     Not(in=zr, out=Notzr);
     Not(in=ng, out=Notng);
@@ -130,16 +127,14 @@ CHIP CPU {
     Or(a=JumpJGE, b=JumpJLT, out=OrJumpJGEJLT);
     Or(a=JumpJNE, b=JumpJLE, out=OrJumpJNEJLE);
     
-    Or(a=OrJumpJGTJEQ, b=OrJumpJGEJLT, out=OrOrJumpJGTJEQJGEJLT)
+    Or(a=OrJumpJGTJEQ, b=OrJumpJGEJLT, out=OrOrJumpJGTJEQJGEJLT);
     
     Or(a=OrJumpJNEJLE, b=JumpJMP, out=OrOrJumpJNEJLEJMP);
 
     Or(a=OrOrJumpJGTJEQJGEJLT, b=OrOrJumpJNEJLEJMP, out=load);
 
     //Add everything to pc
-    PC(in=outAReg, load=load, inc=nullOut, reset=reset, out=pc);
+    PC(in=outAReg, load=load, inc=NullOut, reset=reset, out[1..15]=pc);
 
-    //Instruction[12] should be outM
-    And(a=True, b=instruction[12], out=outM);
 
 }
