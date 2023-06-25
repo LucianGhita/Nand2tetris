@@ -49,7 +49,7 @@ CHIP CPU {
     
     // handling A instruction
     Mux16(a=outM, b=instruction, sel=instruction[0], out=outAMux);
-    Register(in=outAMux, load=instruction[10], out=outAReg);
+    Register(in=outAMux, load=instruction[10], out=outAReg, out=addressM);
 
     // dRegister
     Register(in=outM, load=instruction[11], out=outD);
@@ -95,13 +95,8 @@ CHIP CPU {
     And(a=AndJ1J2, b=NotJ3, out=JLEOut);
 
     //JMP
-    And(a=AndJ1J2, b=instruction[15], out=JMPOut);
+    And(a=AndJ1J2, b=instruction[15], out=JumpJMP);
     
-
-
-    PC(in=outAReg, load=, inc=outJReg, reset=reset, out=pc);
-    
-
     ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=zr, ng=ng);
 
     Not(in=zr, out=Notzr);
@@ -129,4 +124,22 @@ CHIP CPU {
     Or(a=JumpJLT, b=JumpJEQ, out=JumpJLE);
     
     // JMP as well
+
+    // Check if we have one jump condition by OR for everything
+    Or(a=JumpJGT, b=JumpJEQ, out=OrJumpJGTJEQ);
+    Or(a=JumpJGE, b=JumpJLT, out=OrJumpJGEJLT);
+    Or(a=JumpJNE, b=JumpJLE, out=OrJumpJNEJLE);
+    
+    Or(a=OrJumpJGTJEQ, b=OrJumpJGEJLT, out=OrOrJumpJGTJEQJGEJLT)
+    
+    Or(a=OrJumpJNEJLE, b=JumpJMP, out=OrOrJumpJNEJLEJMP);
+
+    Or(a=OrOrJumpJGTJEQJGEJLT, b=OrOrJumpJNEJLEJMP, out=load);
+
+    //Add everything to pc
+    PC(in=outAReg, load=load, inc=nullOut, reset=reset, out=pc);
+
+    //Instruction[12] should be outM
+    And(a=True, b=instruction[12], out=outM);
+
 }
