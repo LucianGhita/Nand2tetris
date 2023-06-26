@@ -41,25 +41,34 @@ CHIP CPU {
     PARTS:
     // Put your code here:
 
-    //0011 0000 0011 1001
+                                                                                            //0011 0000 0011 1001
+                                                                                            //zx, // zero the x input?
+                                                                                            // nx, // negate the x input?
+                                                                                            // zy, // zero the y input?
+                                                                                                //ny, // negate the y input?
+                                                                                            // f,  // compute out = x + y (if 1) or x & y (if 0)
+                                                                                            // no
     // handling C instruction
     //Not 0 -> isCInstruction = 1  
     
-    And16(a=instruction, b=true, out=instructionOut, out[15]=opCode, out[12]=aInput, out[11]=no, out[10]=f, out[9]=ny, out[8]=zy, out[7]=nx, out[6]=zx, out[5]=cA, out[4]=cD, out[2]=J1, out[1]=J2, out[0]=J3);
+    And16(a=instruction, b=true, out=instructionOut, out[15]=opCode, out[12]=aInput, out[11]=zx, out[10]=nx, out[9]=zy, out[8]=ny, out[7]=f, out[6]=no, out[5]=cA, out[4]=cD, out[3]=writeMFirst, out[2]=J3, out[1]=J2, out[0]=J1);
     // ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=zr, ng=ng);
     Not(in=opCode, out=isCInstruction);
-    
+    And(a=opCode, b=writeMFirst, out=writeM);
     // handling A instruction
     // -> instruction
     Mux16(a=outMInputs, b=instruction, sel=isCInstruction, out=outAMux);
+    
+    Mux(a=cA, b=isCInstruction, sel=isCInstruction, out=wOut);
     // instruction, load = 1 -> outAReg = instruction
-    Register(in=outAMux, load=cA, out=outAReg, out[0..14]=addressM);
+
+    ARegister(in=outAMux, load=wOut, out=outAReg, out[0..14]=addressM);
 
     // dRegister
     DRegister(in=outMInputs, load=cD, out=outD);
     
     // second entry in the alu (a register or inM) if it is a c instruction, then use data value as input for alu
-    Mux16(a=outAReg, b=inM, sel=aInput, out=outMux, out[3]=writeM);
+    Mux16(a=outAReg, b=inM, sel=aInput, out=outMux);
     
     // Jump bits and result      
     Not(in=J1, out=NotJ1);
@@ -135,8 +144,9 @@ CHIP CPU {
 
     Or(a=OrOrJumpJGTJEQJGEJLT, b=OrOrJumpJNEJLEJMP, out=load);
 
+    Or(a=isCInstruction, b=NullOut, out=pcIn);
     //Add everything to pc
-    PC(in=outAReg, load=load, inc=NullOut, reset=reset, out[0..14]=pc);
+    PC(in=outAReg, load=load, inc=pcIn, reset=reset, out[0..14]=pc);
 
 
 }
