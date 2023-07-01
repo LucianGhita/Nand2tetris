@@ -28,4 +28,25 @@ CHIP Memory {
 
     PARTS:
     // Put your code here:
+
+    // if   0 <= address <= 16383 
+    
+    RAM16K(in=in, load=load, address=address[0..13], out=RAM16KOut);
+
+
+    // if 16384 <=address <= 24,575 
+    Screen(in=in, load=load, address=address[0..12], out=outScreen);
+    // if address == 24,576
+    Keyboard(out=outKeyboard);
+
+    And(a=address[14], b=address[13], out=selKeyboard);
+    And(a=address[13], b=true, out=selScreen);
+
+    Mux16(a=RAM16KOut, b=outScreen, sel=selScreen, out=outRamORScreen);
+    Mux16(a=outRamORScreen, b=outKeyboard, sel=selKeyboard, out=out);
+
+
+//1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
+
+//0 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 
 }
