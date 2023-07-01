@@ -50,9 +50,10 @@ CHIP CPU {
                                                                                             // no
     // handling C instruction
     //Not 0 -> isCInstruction = 1  
-    
-    And16(a=instruction, b=true, out=instructionOut, out[15]=opCode, out[12]=aInput, out[11]=zx, out[10]=nx, out[9]=zy, out[8]=ny, out[7]=f, out[6]=no, out[5]=cA, out[4]=cD, out[3]=writeMFirst, out[2]=J3, out[1]=J2, out[0]=J1);
-    // ALU(x=outD, y=outMux, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=outM, zr=zr, ng=ng);
+    // This is done only for readability reasons.
+    And16(a=instruction, b=true, out=instructionOut, out[15]=opCode, out[12]=aInput, out[11]=zx, out[10]=nx, out[9]=zy, out[8]=ny, out[7]=f, out[6]=no, out[5]=cA, out[4]=cD, out[3]=writeMFirst, out[2]=J1, out[1]=J2, out[0]=J3);
+
+    // check if it is not a C instruction in order to feed the MUX 
     Not(in=opCode, out=isCInstruction);
     And(a=opCode, b=writeMFirst, out=writeM);
     // handling A instruction
@@ -65,7 +66,8 @@ CHIP CPU {
     ARegister(in=outAMux, load=wOut, out=outAReg, out[0..14]=addressM);
 
     // dRegister
-    DRegister(in=outMInputs, load=cD, out=outD);
+    And(a=cD, b=opCode, out=inCd);
+    DRegister(in=outMInputs, load=inCd, out=outD);
     
     // second entry in the alu (a register or inM) if it is a c instruction, then use data value as input for alu
     Mux16(a=outAReg, b=inM, sel=aInput, out=outMux);
@@ -115,21 +117,22 @@ CHIP CPU {
     And(a=AndNotzrNotng, b=JGTOut, out=JumpJGT);
 
     // Check if is jump equals 0
-    And(a=Notng, b=zr, out=AndNotngZr);
-    And(a=AndNotngZr, b=JEQOut, out=JumpJEQ);
+    And(a=zr, b=JEQOut, out=JumpJEQ);
 
     // Check if is Jump greater or equals
-    Or(a=JumpJGT, b=JumpJEQ, out=JumpJGE);
+    
+    And(a=JGEOut, b=Notng, out=JumpJGE);
 
     // Check if is Jump less than zero
     And(a=Notzr, b=ng, out=AndNotzrNg);
     And(a=AndNotzrNg, b=JLTOut, out=JumpJLT);
 
     // Check if is Jump different than 0
-    Or(a=JumpJGT, b=JumpJLT, out=JumpJNE);
+    And(a=JNEOut, b=Notzr, out=JumpJNE);
 
     // Check if less or equals
-    Or(a=JumpJLT, b=JumpJEQ, out=JumpJLE);
+    Or(a=ng, b=zr, out=OrNgZr);
+    And(a=JLEOut, b=OrNgZr, out=JumpJLE);
     
     // JMP as well
 
@@ -137,16 +140,20 @@ CHIP CPU {
     Or(a=JumpJGT, b=JumpJEQ, out=OrJumpJGTJEQ);
     Or(a=JumpJGE, b=JumpJLT, out=OrJumpJGEJLT);
     Or(a=JumpJNE, b=JumpJLE, out=OrJumpJNEJLE);
-    
     Or(a=OrJumpJGTJEQ, b=OrJumpJGEJLT, out=OrOrJumpJGTJEQJGEJLT);
-    
     Or(a=OrJumpJNEJLE, b=JumpJMP, out=OrOrJumpJNEJLEJMP);
-
     Or(a=OrOrJumpJGTJEQJGEJLT, b=OrOrJumpJNEJLEJMP, out=load);
 
+
+    //Increment if load is 0 Or is a C instruction or there is no jump
+    Not(in=load, out=Notload);
     Or(a=isCInstruction, b=NullOut, out=pcIn);
+    Or(a=pcIn, b=Notload, out=pcInOr);
+    
     //Add everything to pc
-    PC(in=outAReg, load=load, inc=pcIn, reset=reset, out[0..14]=pc);
+   
+    And(a=opCode, b=load, out=loadIfOpCode);
+    PC(in=outAReg, load=loadIfOpCode, inc=pcInOr, reset=reset, out[0..14]=pc);
 
 
 }
