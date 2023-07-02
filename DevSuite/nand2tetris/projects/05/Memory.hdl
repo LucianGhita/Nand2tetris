@@ -29,22 +29,21 @@ CHIP Memory {
     PARTS:
     // Put your code here:
 
-    // if   0 <= address <= 16383 
-    
-    RAM16K(in=in, load=load, address=address[0..13], out=RAM16KOut);
+    DMux4Way(in=load, sel=address[13..14], a=loadRam1, b=loadRam2, c=loadScreen, d=loadKBD);
 
-
-    // if 16384 <=address <= 24,575 
-    Screen(in=in, load=load, address=address[0..12], out=outScreen);
-    // if address == 24,576
+    Or(a=loadRam1, b=loadRam2, out=loadRam);
+    RAM16K(in=in, load=loadRam, address=address[0..13], out=RAM16KOut);
+    Screen(in=in, load=loadScreen, address=address[0..12], out=outScreen);
     Keyboard(out=outKeyboard);
+    
 
-    And(a=address[14], b=address[13], out=selKeyboard);
-    And(a=address[13], b=true, out=selScreen);
 
-    Mux16(a=RAM16KOut, b=outScreen, sel=selScreen, out=outRamORScreen);
-    Mux16(a=outRamORScreen, b=outKeyboard, sel=selKeyboard, out=out);
+    Mux4Way16(a=RAM16KOut, b=RAM16KOut, c=outScreen, d=outKeyboard, sel=address[13..14], out=out);
+    // if   0 <= address <= 16383 
+    // if 16384 <=address <= 24,575 
+    // if address == 24,576
 
+   
 
 //1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
 
