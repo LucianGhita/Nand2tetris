@@ -5,15 +5,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Assembler {
+	
 
 	boolean isLastLine = false;
 	public static void main(String[] args) {
 		String fileContent = null;
-		Path filePath = Path.of("../pong/PongL.asm");
+		Path filePath = Path.of("../pong/Pong.asm");
 		try {
 			fileContent = Files.readString(filePath);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -21,39 +21,37 @@ public class Assembler {
 	}
 
 	private static void generateMachineCode(String fileContent) {
+		
 		StringBuffer machineCode = new StringBuffer();
 		if (fileContent != null) {
 			String[] lines = fileContent.split(System.lineSeparator());
-			for (int i = 0; i < lines.length; i++) {
-				String line = lines[i];
-				boolean lastLine = false;
-				if (i == lines.length - 1) {
-					lastLine = true;
-				}
-				if (!line.isBlank() && !line.startsWith("//")) {
-					line = handleInlineComments(line).stripLeading();
+			Symbols.populateSymbolTable(lines);
+			
+			for (String line : lines) {
+				line = Symbols.handleInlineComments(line).stripLeading().stripTrailing();
+				if (!line.isBlank() && !line.startsWith("//") && !line.contains("(")) {
 					if (line.startsWith("@")) {
-						handleAInstruction(line, machineCode);
-						appendSeparatorUntilLastLine(machineCode, lastLine);
+						appendAInstruction(machineCode, line);
 					} else {
-//						System.out.println(line);
 						handleCInstruction(line, machineCode);
-						appendSeparatorUntilLastLine(machineCode, lastLine);
 					}
+					machineCode.append(System.lineSeparator());
 				}
 			}
 		}
 		try {
-			Files.write(Path.of("MaxLJava.hack"), machineCode.toString().getBytes());
+			Files.write(Path.of("PongJava.hack"), machineCode.toString().getBytes());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	private static void appendSeparatorUntilLastLine(StringBuffer machineCode, boolean lastLine) {
-		if (!lastLine) {
-			machineCode.append(System.lineSeparator());
+
+	private static void appendAInstruction(StringBuffer machineCode, String line) {
+		if (Symbols.symbolMap.get(line.substring(1)) != null) {
+			machineCode.append(Symbols.symbolMap.get(line.substring(1)));
+		} else {
+			handleAInstruction(line, machineCode);
 		}
 	}
 
@@ -122,25 +120,7 @@ public class Assembler {
 
 	private static void handleAInstruction(String line, StringBuffer machineCode) {
 		String decimalString = line.substring(1, line.length());
-		String binaryString = Integer.toBinaryString(Integer.valueOf(decimalString));
-		int length = binaryString.length();
-		binaryString = appendZeroes(binaryString, length);
-//		System.out.println("AInstruction: " + binaryString);
+		String binaryString = Symbols.getBinaryString(decimalString);
 		machineCode.append(binaryString);
-	}
-
-	private static String appendZeroes(String binaryString, int length) {
-		int zeroesToAppend = 16 - length;
-		for(int i = 0; i < zeroesToAppend; i++) {
-			binaryString = '0' + binaryString;
-		}
-		return binaryString;
-	}
-
-	private static String handleInlineComments(String line) {
-		if(line.contains("//") && !line.startsWith("//")) {
-			line = line.substring(0, line.indexOf("/"));
-		}
-		return line;
 	}
 }
