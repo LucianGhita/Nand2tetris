@@ -10,7 +10,7 @@ public class Assembler {
 	boolean isLastLine = false;
 	public static void main(String[] args) {
 		String fileContent = null;
-		Path filePath = Path.of("../pong/Pong.asm");
+		Path filePath = Path.of("../rect/Rect.asm");
 		try {
 			fileContent = Files.readString(filePath);
 		} catch (IOException e) {
@@ -40,7 +40,7 @@ public class Assembler {
 			}
 		}
 		try {
-			Files.write(Path.of("PongJava.hack"), machineCode.toString().getBytes());
+			Files.write(Path.of("RectJava.hack"), machineCode.toString().getBytes());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
