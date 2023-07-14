@@ -26,7 +26,6 @@ public class Parser {
 			for (var line : codeLines) {
 				line = handleInlineComments(line).stripTrailing().stripLeading();
 				if (!line.isBlank() && !line.startsWith("//")) {
-					System.out.println(line);
 					if (line.startsWith(PUSH) || line.startsWith(POP)) {
 						Command command = getPushPop(line);
 						commands.add(command);
