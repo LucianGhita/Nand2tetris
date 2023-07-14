@@ -15,18 +15,22 @@ public class CodeWriter {
 	
 	private final static Map<String, Integer> hackRam = new HashMap<>();
 	
-	private final static String SP   = "SP";
-	private final static String LCL  = "LCL";
-	private final static String ARG  = "ARG";
-	private final static String THIS = "THIS";
-	private final static String THAT = "THAT";
+	private final static String SP     = "SP";
+	private final static String LCL    = "LCL";
+	private final static String ARG    = "ARG";
+	private final static String THIS   = "THIS";
+	private final static String THAT   = "THAT";
+	private final static String STATIC = "STATIC";
+	
+	private final static String GENERAL_PURPOSE_REGISTER = "@R13" + System.lineSeparator();
 	
 	static {
-		hackRam.put(SP,   0);
-		hackRam.put(LCL,  1);
-		hackRam.put(ARG,  2);
-		hackRam.put(THIS, 3);
-		hackRam.put(THAT, 4);
+		hackRam.put(SP,   	0);
+		hackRam.put(LCL,  	1);
+		hackRam.put(ARG,  	2);
+		hackRam.put(THIS, 	3);
+		hackRam.put(THAT, 	4);
+		hackRam.put(STATIC, 16);
 	}
 	
 	public CodeWriter(List<Command> commands, Path filePath) {
@@ -61,18 +65,16 @@ public class CodeWriter {
 		}
 	}
 	
-
+	// TODO handle temp and pointer !!! 
 	private void generatePopCommand(Command command) {
 		generateCommentPushPop(command, true);
-		Integer memorySegmentAddress = getMemorySegment(command);
-		
 		
 		// pop local 2
 		
 		// @2 
 		// D=A put 2 in the D register
 		// @LCL
-		// D=D+A put 2 + 1015 in D => 1017
+		// D=D+M put 2 + 1015 in D => 1017
 		// @addr // general purpose register
 		// M=D   // put 1017 at its address
 		// @SP  // decrease sp
@@ -83,7 +85,26 @@ public class CodeWriter {
 		// A=M  // select the register at 1017
 		// M=D  // put at its value the value at 257
 		
-		
+		Integer baseMemorySegment = getBaseMemorySegment(command);
+		String segment = String.valueOf(baseMemorySegment);
+		if (command.getArg1().equals(MemorySegment.STATIC.getOperation())) {
+			segment = "Foo." + command.getArg2();
+		}
+		builder
+		.append("@").append(command.getArg2()).append(System.lineSeparator()) 	  // @arg2
+		.append("D=A").append(System.lineSeparator()) 							  // D=A
+		.append("@" + segment).append(System.lineSeparator()) // @MemorySegment
+		.append("D=D+M").append(System.lineSeparator()) 						  // D=D+M
+		.append(GENERAL_PURPOSE_REGISTER)										  // @R13
+		.append("M=D").append(System.lineSeparator())							  // M=D
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		  // @SP
+		.append("M=M-1").append(System.lineSeparator()) 						  // M=M-1
+		.append("A=M").append(System.lineSeparator()) 							  // A=M
+		.append("D=M").append(System.lineSeparator()) 							  // D=M
+		.append(GENERAL_PURPOSE_REGISTER)										  // @R13
+		.append("A=M").append(System.lineSeparator()) 							  // A=M
+		.append("M=D").append(System.lineSeparator())							  // M=D
+		;
 	}
 
 
@@ -116,12 +137,13 @@ public class CodeWriter {
 		.append("A=M").append(System.lineSeparator()) 					  	 					 // A=M
 		.append("M=D").append(System.lineSeparator())						  					 // M=D
 		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())	  					 // @SP
-		.append("M=M+1").append(System.lineSeparator());					  					 // M=M+1
+		.append("M=M+1").append(System.lineSeparator())
+		;					  					 // M=M+1
 	}
 
 
 	private Integer getMemorySegment(Command command) {
-		Integer memorySegmentAddress=0;
+		Integer memorySegmentAddress = null;
 		if(command.getArg1().equals(MemorySegment.CONSTANT.getOperation())) {
 			memorySegmentAddress = Integer.valueOf(command.getArg2());
 		} else if (command.getArg1().equals(MemorySegment.LOCAL.getOperation())) {
@@ -132,6 +154,22 @@ public class CodeWriter {
 			memorySegmentAddress = hackRam.get(THIS) + Integer.valueOf(command.getArg2());
 		} else if (command.getArg1().equals(MemorySegment.THAT.getOperation())) {
 			memorySegmentAddress = hackRam.get(THAT) + Integer.valueOf(command.getArg2());
+		}
+		return memorySegmentAddress;
+	}
+	
+	private Integer getBaseMemorySegment(Command command) {
+		Integer memorySegmentAddress = null;
+		if(command.getArg1().equals(MemorySegment.CONSTANT.getOperation())) {
+			memorySegmentAddress = 16;
+		} else if (command.getArg1().equals(MemorySegment.LOCAL.getOperation())) {
+			memorySegmentAddress = hackRam.get(LCL);
+		} else if (command.getArg1().equals(MemorySegment.ARGUMENT.getOperation())) {
+			memorySegmentAddress = hackRam.get(ARG);
+		} else if (command.getArg1().equals(MemorySegment.THIS.getOperation())) {
+			memorySegmentAddress = hackRam.get(THIS);
+		} else if (command.getArg1().equals(MemorySegment.THAT.getOperation())) {
+			memorySegmentAddress = hackRam.get(THAT);
 		}
 		return memorySegmentAddress;
 	}
