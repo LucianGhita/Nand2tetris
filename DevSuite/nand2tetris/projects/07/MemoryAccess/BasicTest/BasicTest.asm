@@ -141,7 +141,7 @@ M=M+1
 //pop temp 6
 @6
 D=A
-@null
+@11
 D=D+M
 @R13
 M=D
@@ -161,7 +161,7 @@ M=D
 @0
 M=M+1
 //push that 5
-@9
+@10
 D=A
 @0
 A=M
@@ -197,7 +197,7 @@ M=M+1
 //add
 //sub
 //push temp 6
-@null
+@11
 D=A
 @0
 A=M
