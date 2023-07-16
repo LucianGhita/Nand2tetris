@@ -11,8 +11,9 @@ public class CodeWriter {
 	private List<Command> commands;
 	private Path filePath;
 	private StringBuilder builder = new StringBuilder();
+	private int arithmeticLabelNo = 0;
+
 	private final static String SPACE = " ";
-	
 	private final static Map<String, Integer> hackRam = new HashMap<>();
 	
 	private final static String SP      = "SP";
@@ -25,7 +26,18 @@ public class CodeWriter {
 	private final static String POINTER_THIS = "POINTER_THIS";
 	private final static String POINTER_THAT = "POINTER_THAT";
 	
+	
 	private final static String GENERAL_PURPOSE_REGISTER = "@R13" + System.lineSeparator();
+	
+	private final static String ADD = "M=D+M";
+	private final static String SUB = "D=-D" + System.lineSeparator() + "M=D+M";
+	private final static String EQ  = "D=M;JEQ";
+	private final static String GT  = "D=M;JGT";
+	private final static String LT  = "D=M;JLT";
+	private final static String NEG = "M=-M";
+	private final static String AND = "M=D&M";
+	private final static String OR  = "M=D|M";
+	private final static String NOT = "M=!M";
 	
 	static {
 		hackRam.put(SP,   	  0);
@@ -44,7 +56,6 @@ public class CodeWriter {
 		this.filePath = filePath;
 	}
 	
-	
 	public void generate() {
 		for (var command : commands) {
 			String commandType = command.getType();
@@ -62,7 +73,6 @@ public class CodeWriter {
 		}
 	}
 
-
 	private void generatePushPopCommand(Command command) {
 		if (command.getType().equals(Parser.C_PUSH)) {
 			generatePushCommand(command);
@@ -74,9 +84,7 @@ public class CodeWriter {
 	// TODO handle temp and pointer !!! 
 	private void generatePopCommand(Command command) {
 		generateCommentPushPop(command, true);
-		
 		// pop local 2
-		
 		// @2 
 		// D=A put 2 in the D register
 		// @LCL
@@ -102,7 +110,6 @@ public class CodeWriter {
 		
 	}
 
-
 	private void generatePopPointer(Command command) {
 		
 		String pointer = "";
@@ -120,7 +127,6 @@ public class CodeWriter {
 		.append("M=D").append(System.lineSeparator())							  // M=D (this assigns the value SP points at)
 		;
 	}
-
 
 	private void generatePopCommand(Command command, String segment) {
 		builder
@@ -169,15 +175,30 @@ public class CodeWriter {
 		} else {
 			Integer memorySegmentAddress = getMemorySegment(command);
 			String segment = String.valueOf(memorySegmentAddress);
-			segment = getStaticAddress(command, segment);
-			generatePushCommand(segment);
+			if (command.getArg1().equals("temp")) {
+				generateTempPush(segment);
+			} else {
+				segment = getStaticAddress(command, segment);
+				generatePushCommand(segment);
+			}
 		}
 	
 	}
 
+	private void generateTempPush(String segment) {
+		builder
+		.append("@").append(segment).append(System.lineSeparator())
+		.append("D=M").append(System.lineSeparator())
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())  					 // @SP
+		.append("A=M").append(System.lineSeparator()) 					  	 					 // A=M
+		.append("M=D").append(System.lineSeparator())						  					 // M=D
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())	  					 // @SP
+		.append("M=M+1").append(System.lineSeparator()) 										 // M=M+1
+		;
+		
+	}
 
 	private void generatePushPointer(Command command) {
-		System.out.println("command");
 		String pointer = "";
 		if (command.getArg2().equals("0")) {
 			pointer = String.valueOf(hackRam.get(POINTER_THIS));
@@ -196,7 +217,6 @@ public class CodeWriter {
 		
 	}
 
-
 	private void generatePushCommand(String memorySegmentAddress) {
 		builder
 		.append("@").append(memorySegmentAddress).append(System.lineSeparator()) 				 // @ constant no
@@ -209,7 +229,6 @@ public class CodeWriter {
 		;					  					 
 	}
 
-
 	private Integer getMemorySegment(Command command) {
 		Integer memorySegmentAddress = null;
 		if(command.getArg1().equals(MemorySegment.CONSTANT.getOperation())) {
@@ -221,7 +240,7 @@ public class CodeWriter {
 		} else if (command.getArg1().equals(MemorySegment.THIS.getOperation())) {
 			memorySegmentAddress = hackRam.get(THIS) + Integer.valueOf(command.getArg2());
 		} else if (command.getArg1().equals(MemorySegment.THAT.getOperation())) {
-			memorySegmentAddress = hackRam.get(TEMP) + Integer.valueOf(command.getArg2());
+			memorySegmentAddress = hackRam.get(THAT) + Integer.valueOf(command.getArg2());
 		} else if (command.getArg1().equals(MemorySegment.TEMP.getOperation())) {
 			memorySegmentAddress = hackRam.get(TEMP) + Integer.valueOf(command.getArg2());
 		} 
@@ -244,10 +263,77 @@ public class CodeWriter {
 		return memorySegmentAddress;
 	}
 
+	
 	private void generateArithmeticCommand(Command command) {
 		generateCommentArithmeticCommand(command);
+		System.out.println("ArithmeticCommand");
+		final String arg1 = command.getArg1();
+		if (arg1.equals("add")) {
+			generateTwoOperandsOperation(ADD);
+		} else if (arg1.equals("sub")) {
+			generateTwoOperandsOperation(SUB);
+		} else if (arg1.equals("neg")) {
+			generateNeg(NEG);
+		} else if (arg1.equals("eq")) {
+			generateLogicComparisons(EQ);
+		} else if (arg1.equals("gt")) {
+			generateLogicComparisons(GT);
+		} else if (arg1.equals("lt")) {
+			generateLogicComparisons(LT);
+		} else if (arg1.equals("and")) {
+			generateTwoOperandsOperation(AND);
+		} else if (arg1.equals("or")) {
+			generateTwoOperandsOperation(OR);
+		} else if (arg1.equals("not")) {
+			generateNeg(NOT);
+		}
 	}
 
+	private void generateLogicComparisons(String operation) {		
+		builder
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("AM=M-1").append(System.lineSeparator())  						// AM=M-1
+		.append("@PUSHT" + arithmeticLabelNo).append(System.lineSeparator())  									// (@PUSHT)
+		.append("D=M;JEQ").append(System.lineSeparator())						// JUMP @PUSHF
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("A=M").append(System.lineSeparator())							// A=M
+		.append("M=0").append(System.lineSeparator())							// M=0								// M=0
+		.append("@CONTINUE" + arithmeticLabelNo).append(System.lineSeparator())	// @CONTINUE
+		.append("0;JMP").append(System.lineSeparator())							// 0;JMP
+		.append("(PUSHT" + arithmeticLabelNo + ")").append(System.lineSeparator())
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("A=M").append(System.lineSeparator())							// A=M
+		.append("M=-1").append(System.lineSeparator())							// M=-1
+		.append("(CONTINUE" + arithmeticLabelNo + ")").append(System.lineSeparator()) // (CONTINUE)
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("M=M+1").append(System.lineSeparator())							// M=M+1
+		;
+		arithmeticLabelNo++;
+	}
+
+	private void generateNeg(String operation) {
+		builder
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("M=M-1").append(System.lineSeparator())  						// M=M-1
+		.append("A=M").append(System.lineSeparator())							// A=M
+		.append(operation).append(System.lineSeparator())							// M=-M
+		;
+	}
+
+	private void generateTwoOperandsOperation(String operation) {
+		builder
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("M=M-1").append(System.lineSeparator())  						// M=M-1
+		.append("A=M").append(System.lineSeparator())							// A=M
+		.append("D=M").append(System.lineSeparator())							// D=M					
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("M=M-1").append(System.lineSeparator())							// M=M-1
+		.append("A=M").append(System.lineSeparator())							// A=M
+		.append(operation).append(System.lineSeparator())							// D=M+D
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("M=M+1").append(System.lineSeparator())	
+		;
+	}
 
 	private void generateCommentArithmeticCommand(Command command) {
 		builder

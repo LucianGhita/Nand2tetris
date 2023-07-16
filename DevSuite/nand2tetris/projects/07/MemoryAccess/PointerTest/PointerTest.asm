@@ -87,6 +87,16 @@ M=D
 @0
 M=M+1
 //add
+@0
+M=M-1
+A=M
+D=M
+@0
+M=M-1
+A=M
+M=D+M
+@0
+M=M+1
 //push this 2
 @5
 D=A
@@ -96,6 +106,17 @@ M=D
 @0
 M=M+1
 //sub
+@0
+M=M-1
+A=M
+D=M
+@0
+M=M-1
+A=M
+M=D-M
+M=-M
+@0
+M=M+1
 //push that 6
 @11
 D=A
@@ -105,3 +126,13 @@ M=D
 @0
 M=M+1
 //add
+@0
+M=M-1
+A=M
+D=M
+@0
+M=M-1
+A=M
+M=D+M
+@0
+M=M+1
