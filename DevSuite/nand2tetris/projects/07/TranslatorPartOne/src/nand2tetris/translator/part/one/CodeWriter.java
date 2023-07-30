@@ -31,9 +31,9 @@ public class CodeWriter {
 	
 	private final static String ADD = "M=D+M";
 	private final static String SUB = "M=M-D";
-	private final static String EQ  = "D=M;JEQ";
-	private final static String GT  = "D=M;JGT";
-	private final static String LT  = "D=M;JLT";
+	private final static String EQ  = "D;JEQ";
+	private final static String GT  = "D;JGT";
+	private final static String LT  = "D;JLT";
 	private final static String NEG = "M=-M";
 	private final static String AND = "M=D&M";
 	private final static String OR  = "M=D|M";
@@ -313,22 +313,28 @@ public class CodeWriter {
 
 	private void generateLogicComparisons(String operation) {		
 		builder
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("AM=M-1").append(System.lineSeparator())  						// AM=M-1
-		.append("@PUSHT" + arithmeticLabelNo).append(System.lineSeparator())  									// (@PUSHT)
-		.append("D=M;JEQ").append(System.lineSeparator())						// JUMP @PUSHF
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("M=0").append(System.lineSeparator())							// M=0								// M=0
-		.append("@CONTINUE" + arithmeticLabelNo).append(System.lineSeparator())	// @CONTINUE
-		.append("0;JMP").append(System.lineSeparator())							// 0;JMP
-		.append("(PUSHT" + arithmeticLabelNo + ")").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("M=-1").append(System.lineSeparator())							// M=-1
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())			    // @SP
+		.append("M=M-1").append(System.lineSeparator())  							    // M=M-1
+		.append("A=M").append(System.lineSeparator())  							        // A=M
+		.append("D=M").append(System.lineSeparator())  							        // D=M
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())			    // @SP
+		.append("M=M-1").append(System.lineSeparator())  							    // M=M-1
+		.append("A=M").append(System.lineSeparator())  							        // A=M
+		.append("D=M-D").append(System.lineSeparator())									// D-M
+		.append("@PUSHT" + arithmeticLabelNo).append(System.lineSeparator())	  	    // (@PUSHT)
+		.append(operation).append(System.lineSeparator())							    // JUMP @PUSHF
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())			    // @SP
+		.append("A=M").append(System.lineSeparator())								    // A=M
+		.append("M=0").append(System.lineSeparator())								    // M=0								
+		.append("@CONTINUE" + arithmeticLabelNo).append(System.lineSeparator())		    // @CONTINUE
+		.append("0;JMP").append(System.lineSeparator())								    // 0;JMP
+		.append("(PUSHT" + arithmeticLabelNo + ")").append(System.lineSeparator())    // (PUSHT)
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		   		// @SP
+		.append("A=M").append(System.lineSeparator())									// A=M
+		.append("M=-1").append(System.lineSeparator())									// M=-1
 		.append("(CONTINUE" + arithmeticLabelNo + ")").append(System.lineSeparator()) // (CONTINUE)
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M+1").append(System.lineSeparator())							// M=M+1
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())				// @SP
+		.append("M=M+1").append(System.lineSeparator())									// M=M+1
 		;
 		arithmeticLabelNo++;
 	}
@@ -338,7 +344,9 @@ public class CodeWriter {
 		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
 		.append("M=M-1").append(System.lineSeparator())  						// M=M-1
 		.append("A=M").append(System.lineSeparator())							// A=M
-		.append(operation).append(System.lineSeparator())							// M=-M
+		.append(operation).append(System.lineSeparator())						// M=-M
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
+		.append("M=M+1").append(System.lineSeparator())  						// M=M-1
 		;
 	}
 
@@ -351,53 +359,9 @@ public class CodeWriter {
 		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
 		.append("M=M-1").append(System.lineSeparator())							// M=M-1
 		.append("A=M").append(System.lineSeparator())							// A=M
-		.append(operation).append(System.lineSeparator())							// D=M+D
+		.append(operation).append(System.lineSeparator())						// D=M+D
 		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
 		.append("M=M+1").append(System.lineSeparator())	
-		;
-	}
-	
-	private void generateAddOperation() {
-		builder
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M-1").append(System.lineSeparator())  						// M=M-1
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("D=M").append(System.lineSeparator())							// D=M	
-		.append(GENERAL_PURPOSE_REGISTER)
-		.append("M=D").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M-1").append(System.lineSeparator())							// M=M-1
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("D=M").append(System.lineSeparator())
-		.append(GENERAL_PURPOSE_REGISTER)
-		.append("D=D+M").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("M=D").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M+1").append(System.lineSeparator())	
-		;
-	}
-	
-	private void generateSubOperation() {
-		builder
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M-1").append(System.lineSeparator())  						// M=M-1
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("D=M").append(System.lineSeparator())							// D=M	
-		.append(GENERAL_PURPOSE_REGISTER)
-		.append("M=D").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M-1").append(System.lineSeparator())							// M=M-1
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("D=M").append(System.lineSeparator())
-		.append(GENERAL_PURPOSE_REGISTER)
-		.append("D=D-M").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("A=M").append(System.lineSeparator())							// A=M
-		.append("M=D").append(System.lineSeparator())
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		// @SP
-		.append("M=M+1").append(System.lineSeparator())
 		;
 	}
 
