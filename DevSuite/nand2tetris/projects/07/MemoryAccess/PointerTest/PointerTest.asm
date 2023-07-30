@@ -9,6 +9,7 @@ M=M+1
 //pop pointer 0
 @0
 M=M-1
+A=M
 D=M
 @3
 M=D
@@ -23,6 +24,7 @@ M=M+1
 //pop pointer 1
 @0
 M=M-1
+A=M
 D=M
 @4
 M=D
@@ -98,8 +100,12 @@ M=D+M
 @0
 M=M+1
 //push this 2
-@5
-D=A
+@3
+D=M
+@2
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D
@@ -113,13 +119,16 @@ D=M
 @0
 M=M-1
 A=M
-M=D-M
-M=-M
+M=M-D
 @0
 M=M+1
 //push that 6
-@11
-D=A
+@4
+D=M
+@6
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D

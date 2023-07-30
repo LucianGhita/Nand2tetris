@@ -139,10 +139,8 @@ M=D
 @0
 M=M+1
 //pop temp 6
-@6
-D=A
 @11
-D=D+M
+D=A
 @R13
 M=D
 @0
@@ -154,15 +152,23 @@ A=M
 M=D
 //push local 0
 @1
-D=A
+D=M
+@0
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D
 @0
 M=M+1
 //push that 5
-@9
-D=A
+@4
+D=M
+@5
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D
@@ -180,8 +186,12 @@ M=D+M
 @0
 M=M+1
 //push argument 1
-@3
-D=A
+@2
+D=M
+@1
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D
@@ -195,21 +205,28 @@ D=M
 @0
 M=M-1
 A=M
-D=-D
-M=D+M
+M=M-D
 @0
 M=M+1
 //push this 6
-@9
-D=A
+@3
+D=M
+@6
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D
 @0
 M=M+1
 //push this 6
-@9
-D=A
+@3
+D=M
+@6
+D=D+A
+A=D
+D=M
 @0
 A=M
 M=D
@@ -234,8 +251,7 @@ D=M
 @0
 M=M-1
 A=M
-D=-D
-M=D+M
+M=M-D
 @0
 M=M+1
 //push temp 6
