@@ -1,4 +1,3 @@
-//null
 //push argument 0
 @2
 D=M
@@ -42,9 +41,6 @@ M=-1
 (CONTINUE0)
 @0
 M=M+1
-//null
-//null
-//null
 //push argument 0
 @2
 D=M
@@ -57,8 +53,6 @@ A=M
 M=D
 @0
 M=M+1
-//null
-//null
 //push argument 0
 @2
 D=M
@@ -90,7 +84,6 @@ A=M
 M=M-D
 @0
 M=M+1
-//null
 //push argument 0
 @2
 D=M
@@ -122,7 +115,6 @@ A=M
 M=M-D
 @0
 M=M+1
-//null
 //add
 @0
 M=M-1
@@ -134,8 +126,6 @@ A=M
 M=D+M
 @0
 M=M+1
-//null
-//null
 //push constant 4
 @4
 D=A
@@ -144,6 +134,3 @@ A=M
 M=D
 @0
 M=M+1
-//null
-//null
-//null

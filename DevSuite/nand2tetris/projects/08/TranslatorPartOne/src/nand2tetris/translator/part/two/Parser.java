@@ -16,8 +16,16 @@ public class Parser {
 	public final static String C_RETURN 	= "C_RETURN";
 	public final static String C_CALL		= "C_CALL";
 	
-	public final static String POP  = "pop";
-	public final static String PUSH = "push";
+	public final static String POP   = "pop";
+	public final static String PUSH  = "push";
+	
+	public final static String IF    = "if-goto";
+	public final static String LABEL = "label";
+	public final static String GOTO  = "goto";
+	
+	public final static String FUNCTION = "function";
+	public final static String CALL = "call";
+	public final static String RETURN = "return";
 	
 	
 	private List<Command> commands = new ArrayList<>();
@@ -31,20 +39,55 @@ public class Parser {
 			String[] codeLines = vmFileContent.split(System.lineSeparator());
 			for (var line : codeLines) {
 				line = handleInlineComments(line).stripTrailing().stripLeading();
+				Command command;
 				if (!line.isBlank() && !line.startsWith("//")) {
 					if (line.startsWith(PUSH) || line.startsWith(POP)) {
-						Command command = getPushPop(line);
-						commands.add(command);
+						command = getPushPop(line);
+					} else if (line.startsWith(IF) || line.startsWith(LABEL) || line.startsWith(GOTO) ) {
+						command = getBranchingCommand(line);
+					} else if (line.startsWith(FUNCTION) || line.startsWith(CALL) || line.startsWith(RETURN)) {
+						command = getFunctionCommands(line);
 					} else {
-						Command command = getArithmethicCommand(line);
-						commands.add(command);
+						command = getArithmethicCommand(line);
 					}
+					commands.add(command);
 				}
 			}
 		}
 	}
-	
-	
+		
+	private Command getFunctionCommands(String line) {
+		Command command = new Command();
+		String[] functionCommand = line.split("\\s+");
+		if (functionCommand[0].startsWith(FUNCTION)) {
+			command.setType(C_FUNCTION);
+			command.setArg1(functionCommand[1]);
+			command.setArg2(functionCommand[2]);
+		} else if (functionCommand[0].startsWith(CALL)) {
+			command.setType(C_CALL);
+			command.setArg1(functionCommand[1]);
+			command.setArg2(functionCommand[2]);
+		} else if (functionCommand[0].startsWith(RETURN)) {
+			command.setType(C_RETURN);
+		}
+		return command;
+	}
+
+	private Command getBranchingCommand(String line) {
+		Command command = new Command();
+		String[] branchingCommand = line.split("\\s+");
+		if (branchingCommand[0].startsWith(IF)) {
+			command.setType(C_IF);
+		} else if (branchingCommand[0].startsWith(GOTO)) {
+			command.setType(C_GOTO);
+		} else if (branchingCommand[0].startsWith(LABEL)) {
+			command.setType(C_LABEL);
+		}
+		
+		command.setArg1(branchingCommand[1]);
+		return command;
+	}
+
 	private Command getArithmethicCommand(String line) {
 		Command command = new Command();
 		
