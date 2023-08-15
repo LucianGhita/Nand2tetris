@@ -41,6 +41,16 @@ M=-1
 (CONTINUE0)
 @0
 M=M+1
+//C_IF IF_TRUE
+@0
+D=M
+@IF_TRUE
+D;JEQ
+//C_GOTO IF_FALSE
+@IF_FALSE
+0;JMP
+//C_LABEL IF_TRUE
+(IF_TRUE)
 //push argument 0
 @2
 D=M
@@ -53,6 +63,8 @@ A=M
 M=D
 @0
 M=M+1
+//C_LABEL IF_FALSE
+(IF_FALSE)
 //push argument 0
 @2
 D=M
@@ -134,3 +146,8 @@ A=M
 M=D
 @0
 M=M+1
+//C_LABEL WHILE
+(WHILE)
+//C_GOTO WHILE
+@WHILE
+0;JMP

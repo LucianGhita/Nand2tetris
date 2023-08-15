@@ -1,6 +1,7 @@
 package nand2tetris.translator.part.two;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -11,8 +12,11 @@ public class CodeWriter {
 	private List<Command> commands;
 	private Path filePath;
 	private StringBuilder builder = new StringBuilder();
+	
+	// Maybe another way for generating unique label prefixes can be used, but it is good enough for the hack computer.
+	
 	private int arithmeticLabelNo = 0;
-
+	
 	private final static String SPACE = " ";
 	private final static Map<String, Integer> hackRam = new HashMap<>();
 	
@@ -63,6 +67,8 @@ public class CodeWriter {
 				generateArithmeticCommand(command);
 			} else if (commandType.equals(Parser.C_PUSH) || commandType.equals(Parser.C_POP)) {
 				generatePushPopCommand(command);
+			} else if (commandType.equals(Parser.C_LABEL) || commandType.equals(Parser.C_IF) || commandType.equals(Parser.C_GOTO)) {
+				generateBranchingCommand(command);
 			}
 		}
 		
@@ -71,6 +77,61 @@ public class CodeWriter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void generateBranchingCommand(Command command) {
+		generateCommentBranching(command);
+		if (command.getType().equals(Parser.C_LABEL) ) {
+			generateLabel(command);
+		} else if (command.getType().equals(Parser.C_GOTO)) {
+			generateGoto(command);
+		} else if (command.getType().equals(Parser.C_IF)) {
+			generateIfGoto(command);
+		}
+	}
+
+	private void generateIfGoto(Command command) {
+		builder
+		.append("@")
+		.append(hackRam.get(SP))
+		.append(System.lineSeparator())
+		.append("D=M")
+		.append(System.lineSeparator())
+		.append("@")
+		.append(command.getArg1())
+		.append(System.lineSeparator())
+		.append("D;JEQ")
+		.append(System.lineSeparator())
+		;
+		
+	}
+
+	private void generateCommentBranching(Command command) {
+		builder
+		.append("//" + command.getType() + " " + command.getArg1())
+		.append(System.lineSeparator());
+	}
+
+	private void generateGoto(Command command) {
+		
+		//@LABEL
+		// 0;JMP
+		builder
+		.append("@")
+		.append(command.getArg1())
+		.append(System.lineSeparator())
+		.append("0;JMP")
+		.append(System.lineSeparator());
+		
+	}
+
+	private void generateLabel(Command command) {
+		// (LABEL)
+		builder
+		.append("(")
+		.append(command.getArg1())
+		.append(")")
+		.append(System.lineSeparator());
 	}
 
 	private void generatePushPopCommand(Command command) {
