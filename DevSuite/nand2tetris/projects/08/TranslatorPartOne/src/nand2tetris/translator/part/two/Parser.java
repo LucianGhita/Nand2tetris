@@ -27,6 +27,8 @@ public class Parser {
 	public final static String CALL = "call";
 	public final static String RETURN = "return";
 	
+	public final static String SP_INIT = "SP_INIT";
+	
 	
 	private List<Command> commands = new ArrayList<>();
 	
@@ -47,6 +49,9 @@ public class Parser {
 						command = getBranchingCommand(line);
 					} else if (line.startsWith(FUNCTION) || line.startsWith(CALL) || line.startsWith(RETURN)) {
 						command = getFunctionCommands(line);
+					} else if (line.equals("SP.Init")) {
+						command = new Command();
+						command.setType(SP_INIT);
 					} else {
 						command = getArithmethicCommand(line);
 					}

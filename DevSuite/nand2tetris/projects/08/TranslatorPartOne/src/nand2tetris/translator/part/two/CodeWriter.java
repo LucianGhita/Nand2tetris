@@ -1,7 +1,6 @@
 package nand2tetris.translator.part.two;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -16,6 +15,7 @@ public class CodeWriter {
 	// Maybe another way for generating unique label prefixes can be used, but it is good enough for the hack computer.
 	
 	private int arithmeticLabelNo = 0;
+	private int callNumber = 0;
 	
 	private final static String SPACE = " ";
 	private final static Map<String, Integer> hackRam = new HashMap<>();
@@ -32,7 +32,7 @@ public class CodeWriter {
 	
 	
 	private final static String GENERAL_PURPOSE_REGISTER = "@R13" + System.lineSeparator();
-	
+	private final static String GENERAL_PURPOSE_REGISTER_2= "@R14" + System.lineSeparator();
 	private final static String ADD = "M=D+M";
 	private final static String SUB = "M=M-D";
 	private final static String EQ  = "D;JEQ";
@@ -59,7 +59,6 @@ public class CodeWriter {
 		this.commands = commands;
 		this.filePath = filePath;
 	}
-	
 	public void generate() {
 		for (var command : commands) {
 			String commandType = command.getType();
@@ -69,14 +68,242 @@ public class CodeWriter {
 				generatePushPopCommand(command);
 			} else if (commandType.equals(Parser.C_LABEL) || commandType.equals(Parser.C_IF) || commandType.equals(Parser.C_GOTO)) {
 				generateBranchingCommand(command);
+			} else if (commandType.equals(Parser.C_FUNCTION)) {
+				generateFunction(command);
+			} else if (commandType.equals(Parser.C_CALL)) {
+				generateCall(command);
+			} else if (commandType.equals(Parser.C_RETURN)) {
+				generateReturn();
+			} else if (commandType.equals(Parser.SP_INIT)) {
+				generateSPInit();
+			}
+			
+			try {
+				Files.write(filePath, builder.toString().getBytes());
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
+	}
+	
+	private void generateSPInit() {
+		builder
+		.append("@256").append(System.lineSeparator())
+		.append("D=A").append(System.lineSeparator())
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		  // @SP
+		.append("M=D").append(System.lineSeparator())
+		;
+	
+	}
+	
+	private void generateReturn() {
+		generateReturnComment();
 		
-		try {
-			Files.write(filePath, builder.toString().getBytes());
-		} catch (IOException e) {
-			e.printStackTrace();
+		// endframe = LCL
+		generateEndFrame();
+		// retAddr = *(endframe-5)
+		saveReturnAddress();
+		
+		// *ARG = pop()
+		popReturnValueIntoArgValue();
+		
+		// SP = ARG + 1
+		repositionSP();
+		
+		// THAT = *(endframe-1)
+		endFrameMinusArg("@1", "@" + hackRam.get(THAT) + System.lineSeparator());
+		// THIS = *(endframe-2)
+		endFrameMinusArg("@2", "@" + hackRam.get(THIS) + System.lineSeparator());
+		// ARG = *(endframe-3)
+		endFrameMinusArg("@3", "@" + hackRam.get(ARG) + System.lineSeparator());
+		// LCL = *(endframe-4)
+		endFrameMinusArg("@4", "@" + hackRam.get(LCL) + System.lineSeparator());
+		
+		// goto retAddr
+		gotoRetAddr();
+		
+	}
+
+	private void gotoRetAddr() {
+		builder
+		.append(GENERAL_PURPOSE_REGISTER)
+		.append("A=M").append(System.lineSeparator())
+		.append("0;JMP").append(System.lineSeparator())
+		;
+	}
+
+	private void repositionSP() {
+		builder.append("@").append(hackRam.get(ARG)).append(System.lineSeparator())
+		.append("D=M").append(System.lineSeparator())
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		  // @SP
+		.append("M=D+1").append(System.lineSeparator());
+		;
+	}
+
+	private void popReturnValueIntoArgValue() {
+		builder
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		  // @SP
+		.append("M=M-1").append(System.lineSeparator()) 						  // M=M-1
+		.append("A=M").append(System.lineSeparator()) 							  // A=M
+		.append("D=M").append(System.lineSeparator()) 							  // D=M
+		.append("@")
+		.append(hackRam.get(ARG)).append(System.lineSeparator())
+		.append("A=M").append(System.lineSeparator())
+		.append("M=D").append(System.lineSeparator())
+		;
+	}
+
+	private void saveReturnAddress() {
+		endFrameMinusArg("@5", GENERAL_PURPOSE_REGISTER_2);
+//		builder
+//		.append("@5").append(System.lineSeparator())
+//		.append("D=A").append(System.lineSeparator())
+//		.append(GENERAL_PURPOSE_REGISTER)
+//		.append("D=M-D").append(System.lineSeparator())
+//		.append("A=D").append(System.lineSeparator())
+//		.append("D=M").append(System.lineSeparator())
+//		.append(GENERAL_PURPOSE_REGISTER_2)
+//		.append("M=D").append(System.lineSeparator())
+//		;
+	}
+
+	private void generateEndFrame() {
+		builder
+		.append("@")
+		.append(hackRam.get(LCL)).append(System.lineSeparator())		// @LCL
+		.append("D=M").append(System.lineSeparator())
+		.append(GENERAL_PURPOSE_REGISTER)
+		.append("M=D").append(System.lineSeparator())
+		;
+	}
+
+	private void endFrameMinusArg(String arg, String memSegment) {
+		builder
+		.append(arg).append(System.lineSeparator())
+		.append("D=A").append(System.lineSeparator())
+		.append(GENERAL_PURPOSE_REGISTER)
+		.append("D=M-D").append(System.lineSeparator())
+		.append("A=D").append(System.lineSeparator())
+		.append("D=M").append(System.lineSeparator())
+		.append(memSegment)
+		.append("M=D").append(System.lineSeparator())
+		;
+	}
+
+	private void generateReturnComment() {
+		builder.append("//").append("return").append(System.lineSeparator());
+	}
+
+	private void generateCall(Command command) {
+		appendCallComment(command);
+
+		// push returnAddr
+		final String returnAddressString = command.getArg1() + "$"+ callNumber;
+		saveToStack(returnAddressString);
+		
+		// push LCL
+		saveToStack(String.valueOf(hackRam.get(LCL)));
+		
+		// push ARG 
+		saveToStack(String.valueOf(hackRam.get(ARG)));
+		
+		// push THIS
+		saveToStack(String.valueOf(hackRam.get(THIS)));
+		
+		// push THAT
+		saveToStack(String.valueOf(hackRam.get(THAT)));
+		
+		// ARG=SP-5-nArgs
+		repositionARG(command);
+		
+		// LCL = SP
+		repositionLCL();
+		
+		// goto functionName
+		executeCallFunction(command);
+				
+		// (command.getArg1()+$+callNumber)
+		builder
+		.append("(").append(returnAddressString).append(")").append(System.lineSeparator());
+		
+		callNumber++;
+		
+	}
+
+	private void appendCallComment(Command command) {
+		builder
+		.append("//").append("call").append(SPACE).append(command.getArg1()).append(SPACE).append(command.getArg2()).append(System.lineSeparator());
+	}
+
+	private void executeCallFunction(Command command) {
+		builder
+		.append("@").append(command.getArg1()).append(System.lineSeparator())			// @command.getArg1()
+		.append("0;JMP").append(System.lineSeparator())									// 0;JMP
+		;
+	}
+
+	private void repositionLCL() {
+		builder
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		        		// @SP
+		.append("D=M").append(System.lineSeparator())											//D=M
+		.append("@").append(hackRam.get("LCL")).append(System.lineSeparator())					// @LCL
+		.append("M=D").append(System.lineSeparator());	// M=D
+	}
+
+	private void repositionARG(Command command) {
+		builder
+		.append("@5").append(System.lineSeparator()) 											// @5 
+		.append("D=A").append(System.lineSeparator())											// D=A
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		        		// @SP
+		.append("D=M-D").append(System.lineSeparator())											// D=M-D
+		.append("@").append(command.getArg2()).append(System.lineSeparator())					// @nArgs
+		.append("D=D-A").append(System.lineSeparator())											// D=D-A								
+		.append("@").append(String.valueOf(hackRam.get(ARG))).append(System.lineSeparator())	// @ARG
+		.append("M=D").append(System.lineSeparator())											// M=D-nArgs
+		;
+	}
+
+	private void saveToStack(final String savedAdress) {
+		builder
+		.append("@").append(savedAdress).append(System.lineSeparator())  // @returnAddr_callNumber
+		.append("D=A").append(System.lineSeparator())									// D=A
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		        // @SP
+		.append("A=M").append(System.lineSeparator())									// A=M
+		.append("M=D").append(System.lineSeparator())									// M=D
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())				// @SP
+		.append("M=M+1").append(System.lineSeparator()) 						  	    // M=M+1
+		;
+	}
+
+	private void generateFunction(Command command) {
+		generateFunctionComment(command);
+		// generate function label
+		builder.append("(").append(command.getArg1()).append(")").append(System.lineSeparator());
+		int nVar = Integer.valueOf(command.getArg2());
+		// repeat nVar times
+		// push 0
+		pushZeroNVarTimes(nVar);
+	}
+
+	private void pushZeroNVarTimes(int nVar) {
+		for (int i=0; i< nVar; i++) {
+			builder
+			.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		        // @SP
+			.append("A=M").append(System.lineSeparator())									// A=M
+			.append("M=0").append(System.lineSeparator())									// M=0
+			.append("@").append(hackRam.get(SP)).append(System.lineSeparator())				// @SP
+			.append("M=M+1").append(System.lineSeparator()) 						  	    // M=M+1
+			;
 		}
+	}
+
+	private void generateFunctionComment(Command command) {
+		builder
+		.append("//")
+		.append(command.getArg1())
+		.append(SPACE)
+		.append(command.getArg2())
+		.append(System.lineSeparator());
 	}
 
 	private void generateBranchingCommand(Command command) {
@@ -93,17 +320,14 @@ public class CodeWriter {
 	private void generateIfGoto(Command command) {
 		builder
 		.append("@")
-		.append(hackRam.get(SP))
-		.append(System.lineSeparator())
-		.append("D=M")
-		.append(System.lineSeparator())
-		.append("@")
-		.append(command.getArg1())
-		.append(System.lineSeparator())
-		.append("D;JEQ")
-		.append(System.lineSeparator())
+		.append(hackRam.get(SP)).append(System.lineSeparator())
+		.append("M=M-1").append(System.lineSeparator())
+		.append("A=M").append(System.lineSeparator())
+		.append("D=M").append(System.lineSeparator())
+		.append("@").append(command.getArg1()).append(System.lineSeparator())
+		.append("D;JGT").append(System.lineSeparator())
+		.append("D;JLT").append(System.lineSeparator())
 		;
-		
 	}
 
 	private void generateCommentBranching(Command command) {
@@ -113,15 +337,7 @@ public class CodeWriter {
 	}
 
 	private void generateGoto(Command command) {
-		
-		//@LABEL
-		// 0;JMP
-		builder
-		.append("@")
-		.append(command.getArg1())
-		.append(System.lineSeparator())
-		.append("0;JMP")
-		.append(System.lineSeparator());
+		executeCallFunction(command);
 		
 	}
 
@@ -316,15 +532,7 @@ public class CodeWriter {
 	}
 
 	private void generateConstantPushCommand(String memorySegmentAddress) {
-		builder
-		.append("@").append(memorySegmentAddress).append(System.lineSeparator()) 				 // @ constant no
-		.append("D=A").append(System.lineSeparator()) 						 					 // D=A
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())  					 // @SP
-		.append("A=M").append(System.lineSeparator()) 					  	 					 // A=M
-		.append("M=D").append(System.lineSeparator())						  					 // M=D
-		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())	  					 // @SP
-		.append("M=M+1").append(System.lineSeparator()) 										 // M=M+1
-		;					  					 
+		saveToStack(memorySegmentAddress);					  					 
 	}
 
 	

@@ -4,14 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 public class VMTranslator {
 	
 	
 	public static void main(String[] args) {
-		List<Command> commands = new ArrayList<>();
 		if(args.length == 1 ) {
 			Path path = Path.of(args[0]);
 			StringBuilder fileContent = new StringBuilder();
@@ -20,8 +18,9 @@ public class VMTranslator {
 				asmFileName = path.getFileName().toString();
 				if(!path.toFile().isDirectory()) {
 					fileContent.append(Files.readString(path));
-					
+					parseAndGenerate(path, fileContent);
 				} else {
+					writeInit(fileContent);
 					final File[] files = path.toFile().listFiles();
 					for (var file : files) {
 						if (file.getAbsolutePath().endsWith(".vm")) {
@@ -29,44 +28,39 @@ public class VMTranslator {
 							fileContent.append(System.lineSeparator());
 						}
 					}
+					parseAndGenerate(path, fileContent);
 				}
-				Parser parser = new Parser(fileContent.toString());
-				parser.parseCommands();
-				commands = parser.getCommands();
 			} catch (IOException e) {
 				System.out.println("The file " + asmFileName + " at the filepath specified does not exist or it cannot be accessed");
 			}
-			
-			Path assemblyFilePath = getAssemblyFilePath(path);
-			
-			CodeWriter writer = new CodeWriter(commands, assemblyFilePath);
-			writer.generate();
-		} else {
-			System.out.println("The translator only takes one file or directory at a time.");
 		}
 		
 	}
 
-	private static Path getAssemblyFilePath(Path asmFileName) {
-		String asmName = asmFileName.toAbsolutePath().toString();
-		Path assemblyFilePath = null;
-		if (asmName.endsWith(".vm")) {
-			asmName = asmName.substring(0, asmName.lastIndexOf(".")) + ".asm";
-			String pwd = ""; 
-			try {
-				pwd = asmName.substring(0, asmName.lastIndexOf(File.separator));
-			} catch (IndexOutOfBoundsException e) {
-				pwd = asmName.substring(0, asmName.lastIndexOf("\\"));
-			}
-			
-			assemblyFilePath = Path.of(pwd + File.separator + asmName);
-		} else {
-			final String fileName = asmFileName.toFile().getName();
-			final String pwd = asmFileName.toFile().getParent();
-			assemblyFilePath = Path.of(pwd + File.separator + fileName + File.separator +fileName + ".asm");
-		}
+	private static void writeInit(StringBuilder fileContent) {
+		fileContent.append("SP.Init").append(System.lineSeparator());
+		fileContent.append("call Sys.init 0").append(System.lineSeparator());
+	}
+
+	private static void parseAndGenerate(Path path, StringBuilder fileContent) {
+		List<Command> commands;
+		Parser parser = new Parser(fileContent.toString());
+		parser.parseCommands();
+		commands = parser.getCommands();
 		
-		return assemblyFilePath;
+		Path assemblyFilePath = getAssemblyFilePath(path);
+		CodeWriter writer = new CodeWriter(commands, assemblyFilePath);
+		writer.generate();
+	}
+
+	private static Path getAssemblyFilePath(Path asmFileName) {
+		final String fileNameString = asmFileName.toString();
+		if (fileNameString.endsWith(".vm")) {
+			return Path.of(fileNameString.substring(0, fileNameString.lastIndexOf(".")) + ".asm"); 
+		}
+ 		String asmName = asmFileName.toAbsolutePath().toString();
+		asmName = asmName + File.separator + asmFileName.getFileName() + ".asm";
+		return Path.of(asmName);
 	}
 	
 	
