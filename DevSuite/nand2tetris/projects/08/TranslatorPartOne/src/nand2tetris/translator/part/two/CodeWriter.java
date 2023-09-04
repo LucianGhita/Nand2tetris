@@ -77,12 +77,11 @@ public class CodeWriter {
 			} else if (commandType.equals(Parser.SP_INIT)) {
 				generateSPInit();
 			}
-			
-			try {
-				Files.write(filePath, builder.toString().getBytes());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		}
+		try {
+			Files.write(filePath, builder.toString().getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
