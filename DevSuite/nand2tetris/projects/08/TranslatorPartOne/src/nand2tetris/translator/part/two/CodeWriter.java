@@ -99,33 +99,46 @@ public class CodeWriter {
 		generateReturnComment();
 		
 		// endframe = LCL
+		builder.append("// endframe = LCL").append(System.lineSeparator());
 		generateEndFrame();
+		
 		// retAddr = *(endframe-5)
+		builder.append("// retAddr = *(endframe-5)").append(System.lineSeparator());
 		saveReturnAddress();
 		
 		// *ARG = pop()
+		builder.append("// *ARG = pop()").append(System.lineSeparator());
 		popReturnValueIntoArgValue();
 		
 		// SP = ARG + 1
+		builder.append("// SP = ARG + 1").append(System.lineSeparator());
 		repositionSP();
 		
 		// THAT = *(endframe-1)
+		builder.append("// THAT = *(endframe-1)").append(System.lineSeparator());
 		endFrameMinusArg("@1", "@" + hackRam.get(THAT) + System.lineSeparator());
+		
 		// THIS = *(endframe-2)
+		builder.append("// THIS = *(endframe-2)").append(System.lineSeparator());
 		endFrameMinusArg("@2", "@" + hackRam.get(THIS) + System.lineSeparator());
+		
 		// ARG = *(endframe-3)
+		builder.append("// ARG = *(endframe-3)").append(System.lineSeparator());
 		endFrameMinusArg("@3", "@" + hackRam.get(ARG) + System.lineSeparator());
+		
 		// LCL = *(endframe-4)
+		builder.append("// LCL = *(endframe-4)").append(System.lineSeparator());
 		endFrameMinusArg("@4", "@" + hackRam.get(LCL) + System.lineSeparator());
 		
 		// goto retAddr
+		builder.append("// goto retAddr").append(System.lineSeparator());
 		gotoRetAddr();
 		
 	}
 
 	private void gotoRetAddr() {
 		builder
-		.append(GENERAL_PURPOSE_REGISTER)
+		.append(GENERAL_PURPOSE_REGISTER_2)
 		.append("A=M").append(System.lineSeparator())
 		.append("0;JMP").append(System.lineSeparator())
 		;
@@ -168,8 +181,7 @@ public class CodeWriter {
 
 	private void generateEndFrame() {
 		builder
-		.append("@")
-		.append(hackRam.get(LCL)).append(System.lineSeparator())		// @LCL
+		.append("@").append(hackRam.get(LCL)).append(System.lineSeparator())		// @LCL
 		.append("D=M").append(System.lineSeparator())
 		.append(GENERAL_PURPOSE_REGISTER)
 		.append("M=D").append(System.lineSeparator())
@@ -197,31 +209,40 @@ public class CodeWriter {
 		appendCallComment(command);
 
 		// push returnAddr
+		builder.append("// push returnAddress").append(System.lineSeparator());
 		final String returnAddressString = command.getArg1() + "$"+ callNumber;
-		saveToStack(returnAddressString);
+		generateConstantPushCommand(returnAddressString);
 		
+		builder.append("// push LCL").append(System.lineSeparator());;
 		// push LCL
-		saveToStack(String.valueOf(hackRam.get(LCL)));
+		saveToStackCall(String.valueOf(hackRam.get(LCL)));
 		
+		builder.append("// push ARG").append(System.lineSeparator());;
 		// push ARG 
-		saveToStack(String.valueOf(hackRam.get(ARG)));
+		saveToStackCall(String.valueOf(hackRam.get(ARG)));
 		
+		builder.append("// push THIS").append(System.lineSeparator());;
 		// push THIS
-		saveToStack(String.valueOf(hackRam.get(THIS)));
+		saveToStackCall(String.valueOf(hackRam.get(THIS)));
 		
+		builder.append("// push THAT").append(System.lineSeparator());;
 		// push THAT
-		saveToStack(String.valueOf(hackRam.get(THAT)));
+		saveToStackCall(String.valueOf(hackRam.get(THAT)));
 		
+		builder.append("// reposition ARG").append(System.lineSeparator());;
 		// ARG=SP-5-nArgs
 		repositionARG(command);
 		
+		builder.append("// reposition LCL").append(System.lineSeparator());;
 		// LCL = SP
 		repositionLCL();
 		
+		builder.append("// call function").append(System.lineSeparator());;
 		// goto functionName
 		executeCallFunction(command);
 				
 		// (command.getArg1()+$+callNumber)
+		builder.append("// declare return address").append(System.lineSeparator());;
 		builder
 		.append("(").append(returnAddressString).append(")").append(System.lineSeparator());
 		
@@ -261,11 +282,11 @@ public class CodeWriter {
 		.append("M=D").append(System.lineSeparator())											// M=D-nArgs
 		;
 	}
-
-	private void saveToStack(final String savedAdress) {
+	
+	private void saveToStackCall(final String savedAdress) {
 		builder
 		.append("@").append(savedAdress).append(System.lineSeparator())  // @returnAddr_callNumber
-		.append("D=A").append(System.lineSeparator())									// D=A
+		.append("D=M").append(System.lineSeparator())									// D=A
 		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		        // @SP
 		.append("A=M").append(System.lineSeparator())									// A=M
 		.append("M=D").append(System.lineSeparator())									// M=D
@@ -531,7 +552,15 @@ public class CodeWriter {
 	}
 
 	private void generateConstantPushCommand(String memorySegmentAddress) {
-		saveToStack(memorySegmentAddress);					  					 
+		builder
+		.append("@").append(memorySegmentAddress).append(System.lineSeparator())  // @returnAddr_callNumber
+		.append("D=A").append(System.lineSeparator())									// D=A
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())		        // @SP
+		.append("A=M").append(System.lineSeparator())									// A=M
+		.append("M=D").append(System.lineSeparator())									// M=D
+		.append("@").append(hackRam.get(SP)).append(System.lineSeparator())				// @SP
+		.append("M=M+1").append(System.lineSeparator()) 						  	    // M=M+1
+		;				  					 
 	}
 
 	
