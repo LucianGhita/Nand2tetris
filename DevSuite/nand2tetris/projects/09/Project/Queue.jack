@@ -1,0 +1,68 @@
+class Queue {
+    field Node left;
+    field Node right;
+    field int maxSize;
+    field int currentSize;
+    
+    constructor Queue new (int mS) {
+        let left = Node.new(-1, null, null);
+        let right = Node.new(-1, null, left);
+        let maxSize = mS;
+        let currentSize = 0;
+        return this;
+    }
+
+    method void enq (Node node) {
+        if (currentSize = 0) {
+            do left.setNext(node);
+            do right.setPrev(node);
+            let currentSize = currentSize + 1;
+            return;
+        }
+        if (currentSize < maxSize) {
+            var Node prev;
+            let prev = right.getPrev();
+            do prev.setNext(node);
+            do node.setPrev(prev);
+            do node.setNext(right);
+            do right.setPrev(node);
+            let currentSize = currentSize + 1;
+        } else {
+            // get rid of the oldest entries
+            do deq();
+            do right.getPrev().setNext(node);
+            do node.setPrev(right.getPrev());
+            do node.setNext(right);
+            do right.setPrev(node);
+        }
+        return;
+        
+    }
+
+    method void deq () {
+        var Node node;
+        let node = left.getNext();
+        do left.setNext(node.getNext());
+        do node.dispose();
+        let currentSize = currentSize - 1;
+        return;
+    }
+
+    method boolean isEmpty() {
+        return currentSize = 0;
+    }
+
+
+    method boolean isFull() {
+        return currentSize = maxSize;
+    }
+    // function enq
+    
+    // function deq
+
+    // isEmpty
+
+    // isFull
+
+    
+}

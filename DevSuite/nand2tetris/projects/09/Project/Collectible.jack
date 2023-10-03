@@ -1,0 +1,33 @@
+class Collectible {
+    field int x, y;
+    field int size; 
+
+     /** Constructs a new collectible with a given location and size. */
+   constructor Collectible new(int Ax, int Ay, int Asize) {
+      let x = Ax;
+      let y = Ay;
+      let size = Asize;
+      do draw();
+      return this;
+   }
+
+    /** Disposes this collectible. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+
+    /** Erases the collectible from the screen. */
+   method void erase() {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+   /** Draws the collectible on the screen. */
+   method void draw() {
+      do Screen.setColor(true);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+}

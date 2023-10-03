@@ -1,0 +1,105 @@
+
+class Player {
+
+   field int x, y;
+   field int size; 
+   field int speed;
+
+   /** Constructs a player with a given location and size. */
+   constructor Player new(int Ax, int Ay, int Asize, int Aspeed) {
+      let x = Ax;
+      let y = Ay;
+      let speed = Aspeed;
+      let size = Asize;
+      do draw();
+      return this;
+   }
+
+   /** Disposes this Player. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Draws the Player on the screen. */
+   method void draw() {
+      do Screen.setColor(true);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+   /** Erases the Player from the screen. */
+   method void erase() {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+    /** Increments the Player size by 2 pixels. */
+   method void incSize() {
+      if (((y + size) < 254) & ((x + size) < 510)) {
+         do erase();
+         let size = size + 2;
+         do draw();
+      }
+      return;
+   }
+
+   /** Decrements the Player size by 2 pixels. */
+   method void decSize() {
+      if (size > 2) {
+         do erase();
+         let size = size - 2;
+         do draw();
+      }
+      return;
+   }
+
+   /** Moves the Player up by 2 pixels. */
+   method void moveUp() {
+      if (y > 1) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+         let y = y - speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+      }
+      return;
+   }
+
+   /** Moves the Player down by 2 pixels. */
+   method void moveDown() {
+      if ((y + size) < 254) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+         let y = y + speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+      }
+      return;
+   }
+
+   /** Moves the Player left by 2 pixels. */
+   method void moveLeft() {
+      if (x > 1) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+         let x = x - speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+      }
+      return;
+   }
+
+   /** Moves the Player right by 2 pixels. */
+   method void moveRight() {
+      if ((x + size) < 510) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+         let x = x + speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + size, y + size);
+      }
+      return;
+   }
+}
