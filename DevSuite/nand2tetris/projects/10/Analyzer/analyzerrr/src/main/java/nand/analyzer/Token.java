@@ -25,7 +25,17 @@ public class Token {
             content = input;
         } else if (isSymbol(input)) {
             type = TokenType.SYMBOL;
-            content = input;
+            if (input.equals(">")) {
+            	content = "&gt;";
+            } else if (input.equals("<")) {
+            	content = "&lt;";
+            } else if (input.equals("\"")) {
+            	content = "&quot;";
+            } else if (input.equals("&")) {
+            	content = "&amp;";
+            } else {
+            	content = input;
+            }
         } else if (isIntVal(input)) {
             type = TokenType.INT_CONST;
             content = input;

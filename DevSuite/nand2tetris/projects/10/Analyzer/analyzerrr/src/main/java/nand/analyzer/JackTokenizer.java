@@ -1,5 +1,7 @@
 package nand.analyzer;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,7 +48,32 @@ public class JackTokenizer {
         }
         tokens.add(fileTokens);
     }
-
+    
+    public void writeXml() {
+    	for (var tokenFile : tokens) {
+    		List<Token> tokens2 = tokenFile.getTokens();
+    		try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter("output.xml", true));
+				writer.append("<tokens>");
+				writer.append(System.lineSeparator());
+				tokens2.forEach(x-> {
+					try {
+						writer.append("\t <"  + x.getType().toString().toLowerCase() + ">");
+						writer.append(x.getContent());
+						writer.append("</" +  x.getType().toString().toLowerCase() + ">" + System.lineSeparator());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				});
+				writer.append("</tokens>");
+				writer.close();
+    		} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
 
     private static String[] getFileLines(String filePath) {
 
