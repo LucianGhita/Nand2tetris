@@ -1,6 +1,5 @@
 package nand.analyzer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,14 +10,14 @@ public class Token {
     private String content;
     private TokenType type;
     
-    private List<Token> compoundTokenList;
+    private List<Token> compoundTokenList = new ArrayList<>();
     
     
 
 	public Token(){}
 
     public Token(String input) {
-        parseToken(input);
+        parseToken(input.stripLeading().stripTrailing());
     }
     private void parseToken(String input) {
         if (isKeyword(input)) {
@@ -38,26 +37,28 @@ public class Token {
             content = input;
         } else {
         	type = TokenType.COMPOUND;
-            System.out.println("compount token: " + input);
-            String tokenString = "";
-            compoundTokenList = new ArrayList<>();;
-            for (char c : input.toCharArray()) {
-            	if (!isSymbol("" + c)) {
-            		tokenString += c;
-            	} else {
-            		if (!tokenString.isEmpty()) {
-            			Token token = new Token(tokenString);
-            			compoundTokenList.add(token);
-            		}
-            		Token nextToken = new Token("" + c);
-            		compoundTokenList.add(nextToken);
-            		tokenString = "";
-            	}
-            }
+//        	System.out.println("compound: " + input);
+        	content = input;
+        	String tokenString = "";
+        	for (var c : content.toCharArray()) {
+        		if (isSymbol("" + c)) {
+        			if (!tokenString.strip().isEmpty()) {
+        				Token prevToken = new Token(tokenString);
+        				compoundTokenList.add(prevToken);
+        				tokenString = "";
+        			}
+        			Token token = new Token("" + c);
+        			compoundTokenList.add(token);
+        		} else {
+        			tokenString += c;
+        		}
+        	}
+        	
+        	
             
-            System.out.println("Extracted in: ");
-            compoundTokenList.stream().forEach(x -> System.out.println("\t" + x.getContent() + " of type " + x.getType()));
+//            compoundTokenList.stream().forEach(x -> System.out.println("\t" + x.getContent() + " of type " + x.getType()));
         }
+        
     }
 
 
