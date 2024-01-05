@@ -10,20 +10,22 @@ import java.util.List;
 
 public class JackTokenizer {
 
-    private List<FileTokens> tokens = new ArrayList<FileTokens>();
-    public JackTokenizer(String path) {
+    private List<TokenizedFile> tokenizedFiles = new ArrayList<TokenizedFile>();
+    
+
+	public JackTokenizer(String path) {
         Path inputPath = Path.of(path);
         if (inputPath.toFile().isFile()) {
-                        tokenizeFile(getFileLines(path));
+                        tokenizeFile(getFileLines(path), inputPath);
             } else if (inputPath.toFile().isDirectory()) {
             // handle directories
         }
         
-        System.out.println("Finish");;
+        System.out.println("Finish");
     }
 
-    private void tokenizeFile(String[] fileLines) {
-        FileTokens fileTokens = new FileTokens();
+    private void tokenizeFile(String[] fileLines, Path inputPath) {
+        TokenizedFile fileTokens = new TokenizedFile(inputPath);
         for (var line : fileLines) {
             if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/"))) {
                 	if (!line.isEmpty() && !line.isBlank()) {
@@ -34,7 +36,7 @@ public class JackTokenizer {
                 				Token token = new Token(l.stripLeading().stripTrailing());
                 				if (token.getType().equals(TokenType.COMPOUND)) {
                 					token.getCompoundTokenList().stream().forEach(x -> fileTokens.addToken(x));
-                					token.getCompoundTokenList().forEach(x-> System.out.println("\t" + x.getContent() + " " + x.getType()));
+                					token.getCompoundTokenList().forEach(x -> System.out.println("\t" + x.getContent() + " " + x.getType()));
                 				} else {
                 					fileTokens.addToken(token);
                 					System.out.println("\t" + token.getContent() + " "  + token.getType());
@@ -46,30 +48,27 @@ public class JackTokenizer {
             }
 
         }
-        tokens.add(fileTokens);
+        tokenizedFiles.add(fileTokens);
     }
     
     public void writeXml() {
-    	for (var tokenFile : tokens) {
+    	for (var tokenFile : tokenizedFiles) {
     		List<Token> tokens2 = tokenFile.getTokens();
-    		try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter("output.xml", true));
+    		try (BufferedWriter writer = new BufferedWriter(new FileWriter("output.xml", true))) {
 				writer.append("<tokens>");
 				writer.append(System.lineSeparator());
-				tokens2.forEach(x-> {
-					try {
-						writer.append("\t <"  + x.getType().toString().toLowerCase() + ">");
-						writer.append(x.getContent());
-						writer.append("</" +  x.getType().toString().toLowerCase() + ">" + System.lineSeparator());
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+				tokens2.forEach(x -> {
+						try {
+							writer.append("\t <"  + x.getType().toString().toLowerCase() + ">");
+							writer.append(x.getContent());
+							writer.append("</" +  x.getType().toString().toLowerCase() + ">" + System.lineSeparator());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
 				});
 				writer.append("</tokens>");
 				writer.close();
     		} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
     	}
@@ -87,4 +86,8 @@ public class JackTokenizer {
         }
         return fileLines;
     }
+    
+    public List<TokenizedFile> getTokenizedFiles() {
+		return tokenizedFiles;
+	}
 }

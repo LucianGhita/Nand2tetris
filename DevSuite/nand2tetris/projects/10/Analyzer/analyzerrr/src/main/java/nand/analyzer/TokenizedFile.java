@@ -1,13 +1,21 @@
 package nand.analyzer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FileTokens {
-    private List<Token> tokens;
+public class TokenizedFile {
+	
+	private Path filePath;
+	
+	private List<Token> tokens;
     
     private Token currentToken;
 
-    public void addToken(Token token) {
+    public TokenizedFile(Path filePath) {
+    	this.filePath = filePath;
+    }
+
+	public void addToken(Token token) {
         if (tokens == null) {
             tokens = new ArrayList<>();
         }
@@ -66,4 +74,8 @@ public class FileTokens {
     public List<Token> getTokens() {
         return tokens;
     }
+    
+    public Path getFilePath() {
+		return filePath;
+	}
 }

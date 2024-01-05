@@ -84,7 +84,12 @@ public class Token {
         }
         return false;
     }
+    
+    public boolean isInteger() {
+    	return type.equals(TokenType.INT_CONST);
+    }
 
+    
     private boolean isIdentifier(String input) {
         final String regex = "[a-zA-Z_][a-zA-Z0-9_]*";
 
@@ -93,18 +98,36 @@ public class Token {
 
         return matcher.matches();
     }
-
+    
+    
+    public boolean isIdentifier() {
+    	return type.equals(TokenType.IDENTIFIER);
+    }
+    
     private boolean isSymbol(String input) {
         return TokenUtils.SYMBOLS.contains(input);
     }
 
+    public boolean isSymbol() {
+    	return type.equals(TokenType.SYMBOL);
+    }
+    
     private boolean isKeyword(String input) {
         return TokenUtils.KEYWORDS.contains(input);
     }
 
+    public boolean isKeyword() {
+    	return type.equals(TokenType.KEYWORD);
+    }
+    
     private boolean isStringConstant (String input) {
         return (input.startsWith("\"") && input.endsWith("\""));
     }
+    
+    public boolean isStringConstant() {
+    	return type.equals(TokenType.STRING_CONST);
+    }
+    
     public TokenType getType() {
         return type;
     }
