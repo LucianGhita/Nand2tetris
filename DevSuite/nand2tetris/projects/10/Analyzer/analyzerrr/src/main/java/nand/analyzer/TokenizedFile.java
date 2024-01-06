@@ -35,6 +35,13 @@ public class TokenizedFile {
     	throw new Exception ("No more tokens in the list");
     }
     
+    public Token peek() throws Exception{
+    	if (hasMoreTokens()) {
+    		return tokens.get(0);
+    	}
+    	throw new Exception ("No more tokens in the list");
+    }
+    
     public TokenType tokenType() {
     	return currentToken.getType();
     }

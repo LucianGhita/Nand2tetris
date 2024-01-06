@@ -47,7 +47,6 @@ public class Token {
             content = input;
         } else {
         	type = TokenType.COMPOUND;
-//        	System.out.println("compound: " + input);
         	content = input;
         	String tokenString = "";
         	for (var c : content.toCharArray()) {
@@ -63,10 +62,6 @@ public class Token {
         			tokenString += c;
         		}
         	}
-        	
-        	
-            
-//            compoundTokenList.stream().forEach(x -> System.out.println("\t" + x.getContent() + " of type " + x.getType()));
         }
         
     }
@@ -92,7 +87,6 @@ public class Token {
     
     private boolean isIdentifier(String input) {
         final String regex = "[a-zA-Z_][a-zA-Z0-9_]*";
-
         final Pattern pattern = Pattern.compile(regex, Pattern.MULTILINE);
         final Matcher matcher = pattern.matcher(input);
 
