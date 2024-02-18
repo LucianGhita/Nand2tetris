@@ -106,7 +106,7 @@ public class Token {
     	return type.equals(TokenType.SYMBOL);
     }
     
-    private boolean isKeyword(String input) {
+    boolean isKeyword(String input) {
         return TokenUtils.KEYWORDS.contains(input);
     }
 
