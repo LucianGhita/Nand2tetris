@@ -40,7 +40,7 @@ public class CompilationEngine {
 					writer.append("<class>");
 					writer.newLine();
 					
-					spaceNo += 1;
+					appendSpace();
 					
 					writeTag(writer);
 					advance(tokenizedFile);
@@ -78,9 +78,14 @@ public class CompilationEngine {
 			System.out.println("finished compilation");
 		}
 	}
+
+	private void appendSpace() {
+		spaceNo += 2;
+	}
 	
 	private void compileClassVarDec(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		spaceNo += 1;
+		writeGrammarTag("<classVarDec>", writer);
+		appendSpace();
 		Token nextToken = tokenizedFile.peek();
 		while (isKeyword("static", nextToken) || isKeyword("field", nextToken)) {
 			
@@ -102,13 +107,25 @@ public class CompilationEngine {
 			} else {
 				// error here
 			}
-			
+			nextToken = tokenizedFile.peek();
 		}
-		spaceNo -= 1;
+		removeSpace();
+		writeGrammarTag("</classVarDec>", writer);
 	}
 
+	private void removeSpace() {
+		spaceNo -= 2;
+	}
+	
+	private void writeGrammarTag(String tagName, BufferedWriter writer) throws IOException {
+		appendSpaces(writer, spaceNo);
+		writer.append(tagName);
+		writer.newLine();
+	}
+	
 	private void compileSubroutineDec(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		spaceNo += 1;
+		writeGrammarTag("<subroutineDec>", writer);
+		appendSpace();
 		Token nextToken = tokenizedFile.peek();
 		while (isKeyword("constructor", nextToken) || isKeyword("function", nextToken) || isKeyword("method", nextToken)) {
 			advance(tokenizedFile);
@@ -124,7 +141,20 @@ public class CompilationEngine {
 					writeTag(writer);
 					
 					advance(tokenizedFile);
-					compileParameterList(tokenizedFile, writer);
+					
+					if (isSymbol("(")) {
+						writeTag(writer);
+						
+						compileParameterList(tokenizedFile, writer);
+						
+						if (isSymbol(")")) {
+							writeTag(writer);
+						} else {
+							// error
+						}
+					} else {
+						// error
+					}
 					
 					advance(tokenizedFile);
 					compileSubroutineBody(tokenizedFile, writer);
@@ -136,8 +166,9 @@ public class CompilationEngine {
 			} else {
 				// error
 			}
-			
+			nextToken = tokenizedFile.peek();	
 		}
+		writeGrammarTag("</subroutineDec>", writer);
 	}
 
 	private void compileStatements(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
@@ -185,6 +216,8 @@ public class CompilationEngine {
 	}
 
 	private void compileSubroutineBody(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
+		writeGrammarTag("<subroutineBody>", writer);
+		appendSpace();
 		if (isSymbol("{")) {
 			writeTag(writer);
 			
@@ -212,11 +245,30 @@ public class CompilationEngine {
 		} else {
 			// error 
 		}
+		removeSpace();
+		writeGrammarTag("</subroutineBody>", writer);
 	}
 
 	private void compileZeroOrMoreVarDeclarations(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		while (isSymbol(",", tokenizedFile.peek())) {
+		writeTag(writer);
+		advance(tokenizedFile);
+		
+		if (isType()) {
+			writeTag(writer);
+			advance(tokenizedFile);
 			
+			if (isIdentifier()) {
+				writeTag(writer);
+				advance(tokenizedFile);
+			} else {
+				// error
+			}
+			
+		} else {
+			// error
+		}
+		
+		while (isSymbol(",", tokenizedFile.peek())) {
 			// compile ","
 			advance(tokenizedFile);
 			writeTag(writer);
@@ -224,45 +276,34 @@ public class CompilationEngine {
 			// compile varName identifier
 			advance(tokenizedFile);
 			compileVarName(writer);
-			
-			
 		}
-				
 	}
 
 	private void compileParameterList(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		if (isSymbol("(")) {
+		
+		writeGrammarTag("<parameterList>", writer);
+		compileVarName(writer);
+		
+		// here I need to compile the type as well.
+
+		while (isSymbol(",", tokenizedFile.peek())) {
+			
+			// compile ","
+			advance(tokenizedFile);
 			writeTag(writer);
 			
-			compileVarName(writer);
-			
-			// here I need to compile the type as well.
-
-			while (isSymbol(",", tokenizedFile.peek())) {
-				
-				// compile ","
-				advance(tokenizedFile);
-				writeTag(writer);
-				
-				// compile type
-				compileType(writer);
-				advance(tokenizedFile);
-			
-				// compile varName
-				advance(tokenizedFile);
-				compileVarName(writer);
-			}
-			
+			// compile type
+			compileType(writer);
 			advance(tokenizedFile);
-			
-			if (isSymbol(")")) {
-				writeTag(writer);
-			} else {
-				// error
-			}
-		} else {
-			// error
+		
+			// compile varName
+			advance(tokenizedFile);
+			compileVarName(writer);
 		}
+		writeGrammarTag("<parameterList>", writer);
+		
+		advance(tokenizedFile);
+		
 	}
 
 	/**
