@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JackTokenizer {
 
@@ -27,7 +29,15 @@ public class JackTokenizer {
     private void tokenizeFile(String[] fileLines, Path inputPath) {
         TokenizedFile fileTokens = new TokenizedFile(inputPath);
         for (var line : fileLines) {
-            if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/"))) {
+        	
+        	final String regexNormalComment = "\\/\\/(?!.*\\\".*\\/\\/).*$";
+        	
+        	final String subst = "";
+        	final Pattern pattern = Pattern.compile(regexNormalComment, Pattern.MULTILINE);
+            final Matcher matcher = pattern.matcher(line);
+            line = matcher.replaceAll(subst);
+        	
+            if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/") )) {
                 	if (!line.isEmpty() && !line.isBlank()) {
                 		String[] lines = line.split("\\s+");
                 		System.out.println(line.stripLeading().stripTrailing());

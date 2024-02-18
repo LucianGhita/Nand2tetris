@@ -17,7 +17,7 @@ public class CompilationEngine {
 		this.tokenizer = tokenizer;
 	}
 	
-	private int tabNo = 0;
+	private int spaceNo = 0;
 	public void compile() {
 		List<TokenizedFile> tokenizedFiles = tokenizer.getTokenizedFiles();
 		if (tokenizedFiles != null) {
@@ -40,7 +40,7 @@ public class CompilationEngine {
 					writer.append("<class>");
 					writer.newLine();
 					
-					tabNo += 1;
+					spaceNo += 1;
 					
 					writeTag(writer);
 					advance(tokenizedFile);
@@ -51,7 +51,7 @@ public class CompilationEngine {
 						if (isSymbol("{")) {
 							writeTag(writer);
 					
-							advance(tokenizedFile);
+							
 							compileClassVarDec(tokenizedFile, writer);
 							compileSubroutineDec(tokenizedFile, writer);
 							
@@ -75,12 +75,12 @@ public class CompilationEngine {
 				// error
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("finished compilation");
 		}
 	}
 	
 	private void compileClassVarDec(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		tabNo += 1;
+		spaceNo += 1;
 		Token nextToken = tokenizedFile.peek();
 		while (isKeyword("static", nextToken) || isKeyword("field", nextToken)) {
 			
@@ -104,11 +104,11 @@ public class CompilationEngine {
 			}
 			
 		}
-		tabNo -= 1;
+		spaceNo -= 1;
 	}
 
 	private void compileSubroutineDec(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		tabNo += 1;
+		spaceNo += 1;
 		Token nextToken = tokenizedFile.peek();
 		while (isKeyword("constructor", nextToken) || isKeyword("function", nextToken) || isKeyword("method", nextToken)) {
 			advance(tokenizedFile);
@@ -129,6 +129,7 @@ public class CompilationEngine {
 					advance(tokenizedFile);
 					compileSubroutineBody(tokenizedFile, writer);
 					
+					
 				} else {
 					// error
 				}
@@ -139,12 +140,70 @@ public class CompilationEngine {
 		}
 	}
 
+	private void compileStatements(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
+		Token peekToken = tokenizedFile.peek();
+		while (isSymbol("let", peekToken) || isSymbol("if", peekToken) || isSymbol("while", peekToken) || isSymbol("do", peekToken) || isSymbol("return", peekToken)) {
+			advance(tokenizedFile);
+			if (isSymbol("let")) {
+				compileLetStatement(tokenizedFile, writer);
+			} else if (isSymbol("if")) {
+				compileIfStatement(tokenizedFile, writer);
+				
+			} else if (isSymbol("while")) {
+				compileWhileStatement(tokenizedFile, writer);
+			} else if (isSymbol("do")) {
+				compileDoStatement(tokenizedFile, writer);
+			} else if (isSymbol("return")) {
+				compileReturnStatement(tokenizedFile, writer);
+			}
+		}
+	}
+
+	private void compileReturnStatement(TokenizedFile tokenizedFile, BufferedWriter writer) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void compileDoStatement(TokenizedFile tokenizedFile, BufferedWriter writer) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void compileWhileStatement(TokenizedFile tokenizedFile, BufferedWriter writer) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void compileIfStatement(TokenizedFile tokenizedFile, BufferedWriter writer) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void compileLetStatement(TokenizedFile tokenizedFile, BufferedWriter writer) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	private void compileSubroutineBody(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		if (isSymbol("{")) {
 			writeTag(writer);
 			
-			compileZeroOrMoreVarDeclarations(tokenizedFile, writer);
+			advance(tokenizedFile);
+			if (isKeyword("var")) {
+				compileZeroOrMoreVarDeclarations(tokenizedFile, writer);
+			} else {
+				// error
+			}
+			advance(tokenizedFile);
+			if (isSymbol(";")) {
+				writeTag(writer);
+			} else {
+				// error
+			}
 			
+			compileStatements(tokenizedFile, writer);
+			
+			advance(tokenizedFile);
 			if (isSymbol("}")) {
 				writeTag(writer);
 			} else {
@@ -156,15 +215,11 @@ public class CompilationEngine {
 	}
 
 	private void compileZeroOrMoreVarDeclarations(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		while (isKeyword("var", tokenizedFile.peek())) {
+		while (isSymbol(",", tokenizedFile.peek())) {
 			
-			// compile var
+			// compile ","
 			advance(tokenizedFile);
 			writeTag(writer);
-			
-			// compile type
-			advance(tokenizedFile);
-			compileType(writer);
 			
 			// compile varName identifier
 			advance(tokenizedFile);
@@ -172,7 +227,7 @@ public class CompilationEngine {
 			
 			
 		}
-		
+				
 	}
 
 	private void compileParameterList(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
@@ -254,17 +309,17 @@ public class CompilationEngine {
 	
 
 	private void writeTag(BufferedWriter writer) throws IOException {
-		appendTabs(writer, tabNo);
-		writer.append("<" + currentType() + ">");
+		appendSpaces(writer, spaceNo);
+		writer.append("<" + currentType() + "> ");
 		writer.append(currentToken.getContent());
-		writer.append("</" + currentType()  + ">");
+		writer.append(" </" + currentType()  + ">");
 		writer.newLine();
 	}
 
 
-	private void appendTabs(BufferedWriter writer, int tabNo) throws IOException {
+	private void appendSpaces(BufferedWriter writer, int tabNo) throws IOException {
 		for (int i = 0; i < tabNo; i++) {
-			writer.append("\t");
+			writer.append(" ");
 		}
 	}
 
