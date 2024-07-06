@@ -68,13 +68,16 @@ public class CompilationEngine {
 						// error
 					}
 					writer.append("</class>");
+					writer.append(System.lineSeparator());
 				}
 			} else {
 				// error
 			}
+		
 		} catch (Exception e) {
 			System.out.println("finished compilation");
 		}
+		
 	}
 
 	private void appendSpace() {
@@ -82,11 +85,11 @@ public class CompilationEngine {
 	}
 	
 	private void compileClassVarDec(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		writeGrammarTag("<classVarDec>", writer);
+		
 		appendSpace();
 		Token nextToken = tokenizedFile.peek();
 		while (isKeyword("static", nextToken) || isKeyword("field", nextToken)) {
-			
+			writeGrammarTag("<classVarDec>", writer);
 			advance(tokenizedFile);
 			writeAndAdvance(tokenizedFile, writer);
 			compileType(writer);
@@ -104,9 +107,10 @@ public class CompilationEngine {
 				// error here
 			}
 			nextToken = tokenizedFile.peek();
+			writeGrammarTag("</classVarDec>", writer);
 		}
 		removeSpace();
-		writeGrammarTag("</classVarDec>", writer);
+		
 	}
 
 	private void removeSpace() {
@@ -165,27 +169,36 @@ public class CompilationEngine {
 
 	private void compileStatements(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		Token peekToken = tokenizedFile.peek();
-		while (isKeyword("let", peekToken) 
+		writeGrammarTag("<statements>", writer);
+		if (isStatementNext(peekToken)) {
+			while (isStatementNext(peekToken)) {
+				
+				advance(tokenizedFile);
+				if (isKeyword("let")) {
+					compileLetStatement(tokenizedFile, writer);
+				} else if (isKeyword("if")) {
+					compileIfStatement(tokenizedFile, writer);
+				} else if (isKeyword("while")) {
+					compileWhileStatement(tokenizedFile, writer);
+				} else if (isKeyword("do")) {
+					compileDoStatement(tokenizedFile, writer);
+				} else if (isKeyword("return")) {
+					compileReturnStatement(tokenizedFile, writer);
+				}
+				peekToken = tokenizedFile.peek();
+			}
+		} else {
+			// error
+		}
+		writeGrammarTag("</statements>", writer);
+	}
+
+	private boolean isStatementNext(Token peekToken) {
+		return isKeyword("let", peekToken) 
 				|| isKeyword("if", peekToken) 
 				|| isKeyword("while", peekToken) 
 				|| isKeyword("do", peekToken) 
-				|| isKeyword("return", peekToken)) {
-			
-			advance(tokenizedFile);
-			if (isKeyword("let")) {
-				compileLetStatement(tokenizedFile, writer);
-			} else if (isKeyword("if")) {
-				compileIfStatement(tokenizedFile, writer);
-				
-			} else if (isKeyword("while")) {
-				compileWhileStatement(tokenizedFile, writer);
-			} else if (isKeyword("do")) {
-				compileDoStatement(tokenizedFile, writer);
-			} else if (isKeyword("return")) {
-				compileReturnStatement(tokenizedFile, writer);
-			}
-			peekToken = tokenizedFile.peek();
-		}
+				|| isKeyword("return", peekToken);
 	}
 
 	private void compileReturnStatement(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
@@ -221,6 +234,7 @@ public class CompilationEngine {
 						writeAndAdvance(tokenizedFile, writer);
 						if (isSymbol("(")) {
 							writeAndAdvance(tokenizedFile, writer);
+							compileExpressionList(tokenizedFile, writer);
 							if (isSymbol(")")) {
 								writeAndAdvance(tokenizedFile, writer);
 							} else {
@@ -249,6 +263,12 @@ public class CompilationEngine {
 		writeGrammarTag("</doStatement>", writer);
 	}
 
+	private void compileExpressionList(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException {
+		writeGrammarTag("<expressionList>", writer);
+		
+		writeGrammarTag("</expressionList>", writer);
+	}
+
 	private void writeAndAdvance(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException, Exception {
 		writeTag(writer);
 		advance(tokenizedFile);
@@ -263,9 +283,64 @@ public class CompilationEngine {
 		writeGrammarTag("</whileStatement>", writer);
 	}
 
-	private void compileIfStatement(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException {
+	private void compileIfStatement(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		writeGrammarTag("<ifStatement>", writer);
 		appendSpace();
+		writeAndAdvance(tokenizedFile, writer);
+		if (isSymbol("(")) {
+			writeAndAdvance(tokenizedFile, writer);
+			compileExpression(tokenizedFile, writer);
+		} else {
+			//error 
+		}
+		
+		if (isSymbol(")")) {
+			writeAndAdvance(tokenizedFile, writer);
+		} else {
+			// error
+		}
+		
+		if (isSymbol("{")) {
+			Token peekToken = tokenizedFile.peek();
+			writeAndAdvance(tokenizedFile, writer);
+			if (isStatementNext(peekToken)) {
+				compileStatements(tokenizedFile, writer);
+			} else {
+				writeGrammarTag("<statements>", writer);
+				writeGrammarTag("</statements>", writer);
+			}
+		} else {
+			// error
+		}
+		
+		if (isSymbol("}")) {
+			writeAndAdvance(tokenizedFile, writer);
+		} else {
+			// error
+		}
+		
+		if (isKeyword("else")) {
+			writeAndAdvance(tokenizedFile, writer);
+			if (isSymbol("{")){
+				Token peekToken = tokenizedFile.peek();
+				writeAndAdvance(tokenizedFile, writer);
+				if (isStatementNext(peekToken)) {
+					compileStatements(tokenizedFile, writer);
+				} else {
+					writeGrammarTag("<statements>", writer);
+					writeGrammarTag("</statements>", writer);
+				}
+			} else {
+				// error
+			}
+			
+			if (isSymbol("}")) {
+				writeTag(writer);
+			} else {
+				// error
+			}
+			
+		}
 		
 		removeSpace();
 		writeGrammarTag("</ifStatement>", writer);
@@ -277,14 +352,16 @@ public class CompilationEngine {
 		writeAndAdvance(tokenizedFile, writer);
 		if (isIdentifier()) {
 			writeAndAdvance(tokenizedFile, writer);
+			if (tokenizedFile.peek().getContent().equals("[")) {
+				 tokenizedFile.advance();
+				 tokenizedFile.advance();
+				 compileExpression(tokenizedFile, writer);
+			 }
 			//TODO continue expression handling here
 			if(isSymbol("=")) {
 				writeAndAdvance(tokenizedFile, writer);
-				 if (isIdentifier()) {
-					 writeAndAdvance(tokenizedFile, writer);
-				 } else {
+				compileExpression(tokenizedFile, writer);
 					 // error
-				 }
 			} else {
 				// error
 			}
@@ -298,6 +375,23 @@ public class CompilationEngine {
 		}
 		writeGrammarTag("</letStatement>", writer);
 		removeSpace();
+	}
+
+	private void compileExpression(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
+		writeGrammarTag("<expression>", writer);
+		appendSpace();
+		if (isIdentifier()) {
+			writeGrammarTag("<term>", writer);
+			appendSpace();
+			writeAndAdvance(tokenizedFile, writer);
+			removeSpace();
+			writeGrammarTag("</term>", writer);
+		} else {
+			// error
+		}
+		
+		removeSpace();
+		writeGrammarTag("</expression>", writer);
 	}
 
 	private void compileSubroutineBody(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
@@ -393,7 +487,7 @@ public class CompilationEngine {
 			advance(tokenizedFile);
 			compileVarName(writer);
 		}
-		writeGrammarTag("<parameterList>", writer);
+		writeGrammarTag("</parameterList>", writer);
 		
 		advance(tokenizedFile);
 		
