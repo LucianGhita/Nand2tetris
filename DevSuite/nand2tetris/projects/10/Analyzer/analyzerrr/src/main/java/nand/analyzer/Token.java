@@ -58,8 +58,14 @@ public class Token {
         			}
         			Token token = new Token("" + c);
         			compoundTokenList.add(token);
+        			tokenString = "";
         		} else {
         			tokenString += c;
+        			if (isKeyword(tokenString)) {
+        				Token token = new Token(tokenString);
+        				compoundTokenList.add(token);
+        				tokenString = "";
+        			}
         		}
         	}
         }

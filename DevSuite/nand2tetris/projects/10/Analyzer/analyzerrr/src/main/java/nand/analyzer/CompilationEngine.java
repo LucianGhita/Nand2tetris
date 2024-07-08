@@ -53,7 +53,6 @@ public class CompilationEngine {
 							compileClassVarDec(tokenizedFile, writer);
 							compileSubroutineDec(tokenizedFile, writer);
 							
-							advance(tokenizedFile);
 							
 							if (isSymbol("}")) {
 								writeTag(writer);
@@ -139,12 +138,11 @@ public class CompilationEngine {
 					writeAndAdvance(tokenizedFile, writer);
 					
 					if (isSymbol("(")) {
-						writeTag(writer);
-						
+						writeAndAdvance(tokenizedFile, writer);
 						compileParameterList(tokenizedFile, writer);
 						
 						if (isSymbol(")")) {
-							writeTag(writer);
+							writeAndAdvance(tokenizedFile, writer);
 						} else {
 							// error
 						}
@@ -152,7 +150,6 @@ public class CompilationEngine {
 						// error
 					}
 					
-					advance(tokenizedFile);
 					compileSubroutineBody(tokenizedFile, writer);
 					
 					
@@ -171,9 +168,8 @@ public class CompilationEngine {
 		Token peekToken = tokenizedFile.peek();
 		writeGrammarTag("<statements>", writer);
 		if (isStatementNext(peekToken)) {
-			while (isStatementNext(peekToken)) {
-				
-				advance(tokenizedFile);
+			advance(tokenizedFile);
+			while (isStatementNext(currentToken)) {
 				if (isKeyword("let")) {
 					compileLetStatement(tokenizedFile, writer);
 				} else if (isKeyword("if")) {
@@ -185,7 +181,7 @@ public class CompilationEngine {
 				} else if (isKeyword("return")) {
 					compileReturnStatement(tokenizedFile, writer);
 				}
-				peekToken = tokenizedFile.peek();
+//				advance(tokenizedFile);
 			}
 		} else {
 			// error
@@ -211,10 +207,18 @@ public class CompilationEngine {
 		}
 		advance(tokenizedFile);
 		if (isSymbol(";")) {
-			writeTag(writer);
+			writeAndAdvance(tokenizedFile, writer);
+		} else if (isIdentifier()) { 
+			compileExpression(tokenizedFile, writer);
+			if (isSymbol(";")) {
+				writeAndAdvance(tokenizedFile, writer);
+			} else {
+				// error
+			}
 		} else {
 			// error
 		}
+		
 		removeSpace();
 		writeGrammarTag("</returnStatement>", writer);
 	}
@@ -222,31 +226,16 @@ public class CompilationEngine {
 	private void compileDoStatement(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		writeGrammarTag("<doStatement>", writer);
 		appendSpace();
-		
+
 		if (isKeyword("do")) {
 			writeAndAdvance(tokenizedFile, writer);
 
 			if (isIdentifier()) {
 				writeAndAdvance(tokenizedFile, writer);
 				if (isSymbol(".")) {
-					writeAndAdvance(tokenizedFile, writer);
-					if (isIdentifier()) {
-						writeAndAdvance(tokenizedFile, writer);
-						if (isSymbol("(")) {
-							writeAndAdvance(tokenizedFile, writer);
-							compileExpressionList(tokenizedFile, writer);
-							if (isSymbol(")")) {
-								writeAndAdvance(tokenizedFile, writer);
-							} else {
-								// error
-							}
-						
-						} else {
-//							error
-						}
-					} else {
-//						error
-					}
+					compileSubroutineCallFromClass(tokenizedFile, writer);
+				} else if (isSymbol("(")) {
+					compileNormalSubroutineCall(tokenizedFile, writer);
 				} else {
 //				error
 				}
@@ -255,17 +244,49 @@ public class CompilationEngine {
 			// error
 		}
 		if (isSymbol(";")) {
-			writeTag(writer);
+			writeAndAdvance(tokenizedFile, writer);
 		} else {
 			// error
 		}
+		
 		removeSpace();
 		writeGrammarTag("</doStatement>", writer);
 	}
 
-	private void compileExpressionList(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException {
+	private void compileNormalSubroutineCall(TokenizedFile tokenizedFile, BufferedWriter writer)
+			throws IOException, Exception {
+		writeAndAdvance(tokenizedFile, writer);
+		compileExpressionList(tokenizedFile, writer);
+		if (isSymbol(")")) {
+			writeAndAdvance(tokenizedFile, writer);
+		} else {
+			// error
+		}
+	}
+
+	private void compileSubroutineCallFromClass(TokenizedFile tokenizedFile, BufferedWriter writer)
+			throws IOException, Exception {
+		writeAndAdvance(tokenizedFile, writer);
+		if (isIdentifier()) {
+			writeAndAdvance(tokenizedFile, writer);
+			if (isSymbol("(")) {
+				compileNormalSubroutineCall(tokenizedFile, writer);
+
+			} else {
+//							error
+			}
+		} else {
+//						error
+		}
+	}
+
+	private void compileExpressionList(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		writeGrammarTag("<expressionList>", writer);
-		
+		compileExpression(tokenizedFile, writer);
+		while (isSymbol(",")) {
+			writeAndAdvance(tokenizedFile, writer);
+			compileExpression(tokenizedFile, writer);
+		}
 		writeGrammarTag("</expressionList>", writer);
 	}
 
@@ -274,11 +295,40 @@ public class CompilationEngine {
 		advance(tokenizedFile);
 	}
 
-	private void compileWhileStatement(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException {
-		writeGrammarTag("<whileStatement", writer);
+	private void compileWhileStatement(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
+		writeGrammarTag("<whileStatement>", writer);
 		appendSpace();
+		if (isKeyword()) {
+			writeAndAdvance(tokenizedFile, writer);
+		} else {
+			// error
+		}
+		if (isSymbol("(")) {
+			writeAndAdvance(tokenizedFile, writer);
+			compileExpression(tokenizedFile, writer);
+		} else {
+			// error
+		}
 		
+		if (isSymbol(")")) {
+			writeAndAdvance(tokenizedFile, writer);
+		} else {
+			// error
+		}
 		
+		if (isSymbol("{")) {
+			writeTag(writer);
+			compileStatements(tokenizedFile, writer);
+		} else {
+			// error
+		}
+		
+		if (isSymbol("}")) {
+			writeAndAdvance(tokenizedFile, writer);
+		}
+		else {
+			// error
+		}
 		removeSpace();
 		writeGrammarTag("</whileStatement>", writer);
 	}
@@ -302,7 +352,7 @@ public class CompilationEngine {
 		
 		if (isSymbol("{")) {
 			Token peekToken = tokenizedFile.peek();
-			writeAndAdvance(tokenizedFile, writer);
+			writeTag(writer);
 			if (isStatementNext(peekToken)) {
 				compileStatements(tokenizedFile, writer);
 			} else {
@@ -353,8 +403,8 @@ public class CompilationEngine {
 		if (isIdentifier()) {
 			writeAndAdvance(tokenizedFile, writer);
 			if (tokenizedFile.peek().getContent().equals("[")) {
-				 tokenizedFile.advance();
-				 tokenizedFile.advance();
+				 advance(tokenizedFile);
+				 advance(tokenizedFile);
 				 compileExpression(tokenizedFile, writer);
 			 }
 			//TODO continue expression handling here
@@ -369,7 +419,7 @@ public class CompilationEngine {
 			// error
 		}
 		if (isSymbol(";")) {
-			writeTag(writer);
+			writeAndAdvance(tokenizedFile, writer);
 		} else {
 			// error
 		}
@@ -378,33 +428,33 @@ public class CompilationEngine {
 	}
 
 	private void compileExpression(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		writeGrammarTag("<expression>", writer);
-		appendSpace();
-		if (isIdentifier()) {
+		if (isIdentifier() || isKeyword()) {
+			writeGrammarTag("<expression>", writer);
+			appendSpace();
 			writeGrammarTag("<term>", writer);
 			appendSpace();
 			writeAndAdvance(tokenizedFile, writer);
 			removeSpace();
 			writeGrammarTag("</term>", writer);
+			removeSpace();
+			writeGrammarTag("</expression>", writer);
 		} else {
 			// error
 		}
 		
-		removeSpace();
-		writeGrammarTag("</expression>", writer);
 	}
+
+	
 
 	private void compileSubroutineBody(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		writeGrammarTag("<subroutineBody>", writer);
 		appendSpace();
 		if (isSymbol("{")) {
 			writeTag(writer);
-			
 			compileZeroOrMoreVarDeclarations(tokenizedFile, writer);
 			
 			compileStatements(tokenizedFile, writer);
 			
-			advance(tokenizedFile);
 			if (isSymbol("}")) {
 				writeTag(writer);
 			} else {
@@ -469,27 +519,19 @@ public class CompilationEngine {
 	private void compileParameterList(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
 		
 		writeGrammarTag("<parameterList>", writer);
-		compileVarName(writer);
-		
-		// here I need to compile the type as well.
-
-		while (isSymbol(",", tokenizedFile.peek())) {
-			
-			// compile ","
-			advance(tokenizedFile);
-			writeTag(writer);
-			
-			// compile type
-			compileType(writer);
-			advance(tokenizedFile);
-		
-			// compile varName
-			advance(tokenizedFile);
+ 
+		while (isType()) {
+			writeAndAdvance(tokenizedFile, writer);
 			compileVarName(writer);
+			advance(tokenizedFile);
+			// here I need to compile the type as well.
+			if (isSymbol(",")) {
+				writeAndAdvance(tokenizedFile, writer);
+			} else {
+				break;
+			}
 		}
 		writeGrammarTag("</parameterList>", writer);
-		
-		advance(tokenizedFile);
 		
 	}
 
@@ -574,7 +616,6 @@ public class CompilationEngine {
 	private String currentType(Token token) {
 		return token.getType().toString().toLowerCase();
 	}
-
 	
 	private boolean isKeyword(String content, Token token) {
 		return token.isKeyword() && token.getContent().equals(content);
@@ -586,6 +627,10 @@ public class CompilationEngine {
 	
 	private boolean isIdentifier(Token token) {
 		return token.isIdentifier();
+	}
+	
+	private boolean isKeyword() {
+		return currentToken.getType().equals(TokenType.KEYWORD);
 	}
 	
 	private String createXmlFile(TokenizedFile tokenizedFile) {

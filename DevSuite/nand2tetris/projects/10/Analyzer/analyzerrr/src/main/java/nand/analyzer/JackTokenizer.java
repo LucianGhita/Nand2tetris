@@ -64,13 +64,13 @@ public class JackTokenizer {
     public void writeXml() {
     	for (var tokenFile : tokenizedFiles) {
     		List<Token> tokens2 = tokenFile.getTokens();
-    		try (BufferedWriter writer = new BufferedWriter(new FileWriter("output.xml", true))) {
+    		try (BufferedWriter writer = new BufferedWriter(new FileWriter("output.xml", false))) {
 				writer.append("<tokens>");
 				writer.append(System.lineSeparator());
 				tokens2.forEach(x -> {
 						try {
 							writer.append("\t <"  + x.getType().toString().toLowerCase() + ">");
-							writer.append(x.getContent());
+							writer.append(" " + x.getContent() +" ");
 							writer.append("</" +  x.getType().toString().toLowerCase() + ">" + System.lineSeparator());
 						} catch (IOException e) {
 							e.printStackTrace();
