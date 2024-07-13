@@ -112,6 +112,10 @@ public class Token {
     	return type.equals(TokenType.SYMBOL);
     }
     
+    public boolean equalsSymbol(String symbol) {
+    	return type.equals(TokenType.SYMBOL) && content.equals(symbol);
+    }
+    
     boolean isKeyword(String input) {
         return TokenUtils.KEYWORDS.contains(input);
     }

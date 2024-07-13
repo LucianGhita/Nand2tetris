@@ -256,12 +256,39 @@ public class CompilationEngine {
 	private void compileNormalSubroutineCall(TokenizedFile tokenizedFile, BufferedWriter writer)
 			throws IOException, Exception {
 		writeAndAdvance(tokenizedFile, writer);
-		compileExpressionList(tokenizedFile, writer);
-		if (isSymbol(")")) {
+		if (isSymbol(".")) {
 			writeAndAdvance(tokenizedFile, writer);
+			if (isSubroutineName()) {
+				writeAndAdvance(tokenizedFile, writer);
+				if (isSymbol("(")) {
+					writeAndAdvance(tokenizedFile, writer);
+					compileExpressionList(tokenizedFile, writer);
+					if (isSymbol(")")) {
+						writeAndAdvance(tokenizedFile, writer);
+					} else {
+						// error
+					}
+				} else {
+					// error
+				}
+			} else {
+				// error
+			}
+		} else if (isSymbol("(")) {
+			writeAndAdvance(tokenizedFile, writer);
+			compileExpressionList(tokenizedFile, writer);
+			if (isSymbol(")")) {
+				writeAndAdvance(tokenizedFile, writer);
+			} else {
+				// error
+			}
+		} else if (isSymbol(")")){
+			compileExpressionList(tokenizedFile, writer);
 		} else {
+		
 			// error
 		}
+		
 	}
 
 	private void compileSubroutineCallFromClass(TokenizedFile tokenizedFile, BufferedWriter writer)
@@ -271,7 +298,11 @@ public class CompilationEngine {
 			writeAndAdvance(tokenizedFile, writer);
 			if (isSymbol("(")) {
 				compileNormalSubroutineCall(tokenizedFile, writer);
-
+				if (isSymbol(")")) {
+					writeAndAdvance(tokenizedFile, writer);
+				} else {
+					// error
+				}
 			} else {
 //							error
 			}
@@ -407,7 +438,6 @@ public class CompilationEngine {
 				 advance(tokenizedFile);
 				 compileExpression(tokenizedFile, writer);
 			 }
-			//TODO continue expression handling here
 			if(isSymbol("=")) {
 				writeAndAdvance(tokenizedFile, writer);
 				compileExpression(tokenizedFile, writer);
@@ -428,20 +458,59 @@ public class CompilationEngine {
 	}
 
 	private void compileExpression(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		if (isIdentifier() || isKeyword()) {
+		if (isIdentifier() || isKeyword() || isStringConstant()) {
 			writeGrammarTag("<expression>", writer);
 			appendSpace();
-			writeGrammarTag("<term>", writer);
-			appendSpace();
-			writeAndAdvance(tokenizedFile, writer);
-			removeSpace();
-			writeGrammarTag("</term>", writer);
+			compileTerm(tokenizedFile, writer);
 			removeSpace();
 			writeGrammarTag("</expression>", writer);
 		} else {
 			// error
 		}
 		
+	}
+
+	private void compileTerm(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException, Exception {
+		writeGrammarTag("<term>", writer);
+		appendSpace();
+		Token peekedToken = tokenizedFile.peek();
+		if (isArrayTerm(peekedToken)) {
+			// array
+			writeAndAdvance(tokenizedFile, writer);
+			compileExpression(tokenizedFile, writer);
+			if (isSymbol("]")) {
+				writeAndAdvance(tokenizedFile, writer);
+			}
+		} else if (isSubroutine(peekedToken)) {
+			compileNormalSubroutineCall(tokenizedFile, writer);
+		} else if (isSymbol("(")) {
+			writeAndAdvance(tokenizedFile, writer);
+			compileExpression(tokenizedFile, writer);
+			if (isSymbol(")")) {
+				writeAndAdvance(tokenizedFile, writer);
+			} else {
+				// error
+			}
+		}
+		else if (isIntegerConstant() || isStringConstant() || isKeyword() || isVarName()) {
+			writeAndAdvance(tokenizedFile, writer);	
+		} else {
+			// error
+		}
+		
+		
+		
+		
+		removeSpace();
+		writeGrammarTag("</term>", writer);
+	}
+
+	private boolean isArrayTerm(Token peekedToken) {
+		return isVarName() && isSymbol("[", peekedToken);
+	}
+
+	private boolean isSubroutine(Token peekedToken) {
+		return isSymbol(".", peekedToken) || isSymbol(".", peekedToken);
 	}
 
 	
@@ -641,6 +710,19 @@ public class CompilationEngine {
 		return compiledFile;
 	}
 
-
+	private boolean isSubroutineName () {
+		return currentToken.isIdentifier();
+	}
 	
+	private boolean isIntegerConstant() {
+		return currentToken.isInteger();
+	}
+	
+	private boolean isStringConstant() {
+		return currentToken.isStringConstant();
+	}
+	
+	private boolean isVarName() {
+		return currentToken.isIdentifier();
+	}
 }
