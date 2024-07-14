@@ -37,7 +37,7 @@ public class Token {
             	content = input;
             }
         } else if (isIntVal(input)) {
-            type = TokenType.INT_CONST;
+            type = TokenType.INTEGER_CONSTANT;
             content = input;
         } else if (isIdentifier(input)) {
             type = TokenType.IDENTIFIER;
@@ -87,7 +87,7 @@ public class Token {
     }
     
     public boolean isInteger() {
-    	return type.equals(TokenType.INT_CONST);
+    	return type.equals(TokenType.INTEGER_CONSTANT);
     }
 
     

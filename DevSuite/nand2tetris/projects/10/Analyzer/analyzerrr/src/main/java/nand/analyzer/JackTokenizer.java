@@ -26,40 +26,41 @@ public class JackTokenizer {
         System.out.println("Finish");
     }
 
-    private void tokenizeFile(String[] fileLines, Path inputPath) {
-        TokenizedFile fileTokens = new TokenizedFile(inputPath);
-        for (var line : fileLines) {
-        	
-        	final String regexNormalComment = "\\/\\/(?!.*\\\".*\\/\\/).*$";
-        	
-        	final String subst = "";
-        	final Pattern pattern = Pattern.compile(regexNormalComment, Pattern.MULTILINE);
-            final Matcher matcher = pattern.matcher(line);
-            line = matcher.replaceAll(subst);
-        	
-            if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/") )) {
-                	if (!line.isEmpty() && !line.isBlank()) {
-                		String[] lines = line.split("\\s+");
-                		System.out.println(line.stripLeading().stripTrailing());
-                		for (var l : lines) {
-                			if (!l.isEmpty()) {
-                				Token token = new Token(l.stripLeading().stripTrailing());
-                				if (token.getType().equals(TokenType.COMPOUND)) {
-                					token.getCompoundTokenList().stream().forEach(x -> fileTokens.addToken(x));
-                					token.getCompoundTokenList().forEach(x -> System.out.println("\t" + x.getContent() + " " + x.getType()));
-                				} else {
-                					fileTokens.addToken(token);
-                					System.out.println("\t" + token.getContent() + " "  + token.getType());
-                					
-                				}
-                			}
-                		}
-                }
-            }
+	private void tokenizeFile(String[] fileLines, Path inputPath) {
+		TokenizedFile fileTokens = new TokenizedFile(inputPath);
+		for (var line : fileLines) {
 
-        }
-        tokenizedFiles.add(fileTokens);
-    }
+			final String regexNormalComment = "\\/\\/(?!.*\\\".*\\/\\/).*$";
+
+			final String subst = "";
+			final Pattern pattern = Pattern.compile(regexNormalComment, Pattern.MULTILINE);
+			final Matcher matcher = pattern.matcher(line);
+			line = matcher.replaceAll(subst);
+
+			if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/"))) {
+				if (!line.isEmpty() && !line.isBlank()) {
+					String[] lines = line.split("\\s+");
+					System.out.println(line.stripLeading().stripTrailing());
+					for (var l : lines) {
+						if (!l.isEmpty()) {
+							Token token = new Token(l.stripLeading().stripTrailing());
+							if (token.getType().equals(TokenType.COMPOUND)) {
+								token.getCompoundTokenList().stream().forEach(x -> fileTokens.addToken(x));
+								token.getCompoundTokenList()
+										.forEach(x -> System.out.println("\t" + x.getContent() + " " + x.getType()));
+							} else {
+								fileTokens.addToken(token);
+								System.out.println("\t" + token.getContent() + " " + token.getType());
+
+							}
+						}
+					}
+				}
+			}
+
+		}
+		tokenizedFiles.add(fileTokens);
+	}
     
     public void writeXml() {
     	for (var tokenFile : tokenizedFiles) {
@@ -69,9 +70,9 @@ public class JackTokenizer {
 				writer.append(System.lineSeparator());
 				tokens2.forEach(x -> {
 						try {
-							writer.append("\t <"  + x.getType().toString().toLowerCase() + ">");
+							writer.append("\t <"  + x.getType().toString()+ ">");
 							writer.append(" " + x.getContent() +" ");
-							writer.append("</" +  x.getType().toString().toLowerCase() + ">" + System.lineSeparator());
+							writer.append("</" +  x.getType().toString()+ ">" + System.lineSeparator());
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
