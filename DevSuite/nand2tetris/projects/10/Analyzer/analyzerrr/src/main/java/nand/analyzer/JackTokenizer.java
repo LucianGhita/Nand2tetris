@@ -39,27 +39,55 @@ public class JackTokenizer {
 
 			if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/"))) {
 				if (!line.isEmpty() && !line.isBlank()) {
-					String[] lines = line.split("\\s+");
-					System.out.println(line.stripLeading().stripTrailing());
-					for (var l : lines) {
-						if (!l.isEmpty()) {
-							Token token = new Token(l.stripLeading().stripTrailing());
-							if (token.getType().equals(TokenType.COMPOUND)) {
-								token.getCompoundTokenList().stream().forEach(x -> fileTokens.addToken(x));
-								token.getCompoundTokenList()
-										.forEach(x -> System.out.println("\t" + x.getContent() + " " + x.getType()));
-							} else {
-								fileTokens.addToken(token);
-								System.out.println("\t" + token.getContent() + " " + token.getType());
-
-							}
-						}
+					StringBuffer l = new StringBuffer();
+					boolean isString = false;
+					for (var c : line.toCharArray()) {
+						
+						// handle string constants
+						if (isString && c == '"') {
+							isString = false;
+							l.append(c);
+							createToken(fileTokens, l);
+							continue;
+						} else if (c == '"') {
+							isString = true;
+							l.append(c);
+							continue;
+						} else if (isString) {
+							l.append(c);
+							continue;
+						}						
+						
+						// handle everything else
+						if (!Character.isWhitespace(c)) {
+							l.append(c);
+	 					} else {
+							createToken(fileTokens, l);
+	 					}
+						
 					}
+					System.out.println(line.stripLeading().stripTrailing());
 				}
 			}
 
 		}
 		tokenizedFiles.add(fileTokens);
+	}
+
+	private void createToken(TokenizedFile fileTokens, StringBuffer l) {
+		if (!l.isEmpty()) {
+			Token token = new Token(l.toString());
+			if (token.getType().equals(TokenType.COMPOUND)) {
+				token.getCompoundTokenList().stream().forEach(x -> fileTokens.addToken(x));
+				token.getCompoundTokenList()
+						.forEach(x -> System.out.println("\t" + x.getContent() + " " + x.getType()));
+			} else {
+				fileTokens.addToken(token);
+				System.out.println("\t" + token.getContent() + " " + token.getType());
+				
+			}
+			l.setLength(0);
+		}
 	}
     
     public void writeXml() {
@@ -70,7 +98,7 @@ public class JackTokenizer {
 				writer.append(System.lineSeparator());
 				tokens2.forEach(x -> {
 						try {
-							writer.append("\t <"  + x.getType().toString()+ ">");
+							writer.append("<"  + x.getType().toString()+ ">");
 							writer.append(" " + x.getContent() +" ");
 							writer.append("</" +  x.getType().toString()+ ">" + System.lineSeparator());
 						} catch (IOException e) {
@@ -78,6 +106,7 @@ public class JackTokenizer {
 						}
 				});
 				writer.append("</tokens>");
+				writer.append(System.lineSeparator());
 				writer.close();
     		} catch (IOException e) {
 				e.printStackTrace();

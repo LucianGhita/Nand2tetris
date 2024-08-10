@@ -17,7 +17,7 @@ public class Token {
 	public Token(){}
 
     public Token(String input) {
-        parseToken(input.stripLeading().stripTrailing());
+        parseToken(input);
     }
     private void parseToken(String input) {
         if (isKeyword(input)) {
@@ -43,8 +43,8 @@ public class Token {
             type = TokenType.IDENTIFIER;
             content = input;
         }  else if (isStringConstant(input)) {
-            type = TokenType.STRING_CONST;
-            content = input;
+            type = TokenType.STRING_CONSTANT;
+            content = input.substring(1, input.length() - 1);
         } else {
         	type = TokenType.COMPOUND;
         	content = input;
@@ -129,7 +129,7 @@ public class Token {
     }
     
     public boolean isStringConstant() {
-    	return type.equals(TokenType.STRING_CONST);
+    	return type.equals(TokenType.STRING_CONSTANT);
     }
     
     public TokenType getType() {

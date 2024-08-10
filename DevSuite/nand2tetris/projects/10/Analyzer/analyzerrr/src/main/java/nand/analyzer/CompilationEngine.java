@@ -84,8 +84,6 @@ public class CompilationEngine {
 	}
 	
 	private void compileClassVarDec(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		
-		appendSpace();
 		Token nextToken = tokenizedFile.peek();
 		while (isKeyword("static", nextToken) || isKeyword("field", nextToken)) {
 			writeGrammarTag("<classVarDec>", writer);
@@ -108,8 +106,6 @@ public class CompilationEngine {
 			nextToken = tokenizedFile.peek();
 			writeGrammarTag("</classVarDec>", writer);
 		}
-		removeSpace();
-		
 	}
 
 	private void removeSpace() {
@@ -403,8 +399,8 @@ public class CompilationEngine {
 		if (isKeyword("else")) {
 			writeAndAdvance(tokenizedFile, writer);
 			if (isSymbol("{")){
+				writeTag(writer);
 				Token peekToken = tokenizedFile.peek();
-				writeAndAdvance(tokenizedFile, writer);
 				if (isStatementNext(peekToken)) {
 					compileStatements(tokenizedFile, writer);
 				} else {
@@ -433,11 +429,15 @@ public class CompilationEngine {
 		writeAndAdvance(tokenizedFile, writer);
 		if (isIdentifier()) {
 			writeAndAdvance(tokenizedFile, writer);
-			if (tokenizedFile.peek().getContent().equals("[")) {
-				 advance(tokenizedFile);
-				 advance(tokenizedFile);
-				 compileExpression(tokenizedFile, writer);
-			 }
+			if (isSymbol("[")) {
+				writeAndAdvance(tokenizedFile, writer);
+				compileExpression(tokenizedFile, writer);
+				if (isSymbol("]")) {
+					writeAndAdvance(tokenizedFile, writer);
+				} else {
+					// error
+				}
+			}
 			if(isSymbol("=")) {
 				writeAndAdvance(tokenizedFile, writer);
 				compileExpression(tokenizedFile, writer);
@@ -458,10 +458,14 @@ public class CompilationEngine {
 	}
 
 	private void compileExpression(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		if (isIdentifier() || isKeyword() || isStringConstant()) {
+		if (isIdentifier() || isKeyword() || isStringConstant() || isIntegerConstant() || isSymbol("~") || isSymbol("-")) {
 			writeGrammarTag("<expression>", writer);
 			appendSpace();
 			compileTerm(tokenizedFile, writer);
+			if (isOp()) {
+				writeAndAdvance(tokenizedFile, writer);
+				compileTerm(tokenizedFile, writer);
+			}
 			removeSpace();
 			writeGrammarTag("</expression>", writer);
 		} else {
@@ -476,6 +480,7 @@ public class CompilationEngine {
 		Token peekedToken = tokenizedFile.peek();
 		if (isArrayTerm(peekedToken)) {
 			// array
+			writeAndAdvance(tokenizedFile, writer);
 			writeAndAdvance(tokenizedFile, writer);
 			compileExpression(tokenizedFile, writer);
 			if (isSymbol("]")) {
@@ -494,7 +499,10 @@ public class CompilationEngine {
 		}
 		else if (isIntegerConstant() || isStringConstant() || isKeyword() || isVarName()) {
 			writeAndAdvance(tokenizedFile, writer);	
-		} else {
+		} else if (isSymbol("-") || isSymbol("~")) {
+			writeAndAdvance(tokenizedFile, writer);
+		}
+			else {
 			// error
 		}
 		
@@ -663,7 +671,7 @@ public class CompilationEngine {
 
 
 	private String currentType() {
-		return currentToken.getType().toString().toLowerCase();
+		return currentToken.getType().toString();
 	}
 
 	private void advance(TokenizedFile tokenizedFile) throws Exception {
@@ -724,5 +732,9 @@ public class CompilationEngine {
 	
 	private boolean isVarName() {
 		return currentToken.isIdentifier();
+	}
+	
+	private boolean isOp () {
+		return isSymbol("+") || isSymbol("-") || isSymbol("/") || isSymbol("*") || isSymbol("=") || isSymbol("<") || isSymbol(">") || isSymbol("|") || isSymbol("&");
 	}
 }

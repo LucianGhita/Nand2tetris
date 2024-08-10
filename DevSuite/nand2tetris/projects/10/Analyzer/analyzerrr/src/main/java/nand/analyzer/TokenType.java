@@ -4,7 +4,7 @@ public enum TokenType {
     SYMBOL,
     IDENTIFIER,
     INTEGER_CONSTANT,
-    STRING_CONST, 
+    STRING_CONSTANT, 
     COMPOUND;
 	
 	@Override
