@@ -68,6 +68,10 @@ public class Token {
         			}
         		}
         	}
+        	if (isIdentifier(tokenString)) {
+        		Token token = new Token(tokenString);
+        		compoundTokenList.add(token);
+        	}
         }
         
     }
@@ -91,7 +95,7 @@ public class Token {
     }
 
     
-    private boolean isIdentifier(String input) {
+    public boolean isIdentifier(String input) {
         final String regex = "[a-zA-Z_][a-zA-Z0-9_]*";
         final Pattern pattern = Pattern.compile(regex, Pattern.MULTILINE);
         final Matcher matcher = pattern.matcher(input);

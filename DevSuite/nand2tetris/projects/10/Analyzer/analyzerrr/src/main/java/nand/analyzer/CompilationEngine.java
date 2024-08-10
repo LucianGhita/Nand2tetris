@@ -204,16 +204,14 @@ public class CompilationEngine {
 		advance(tokenizedFile);
 		if (isSymbol(";")) {
 			writeAndAdvance(tokenizedFile, writer);
-		} else if (isIdentifier()) { 
-			compileExpression(tokenizedFile, writer);
+		} else {
+			compileOptionalExpression(tokenizedFile, writer);
 			if (isSymbol(";")) {
 				writeAndAdvance(tokenizedFile, writer);
 			} else {
 				// error
 			}
-		} else {
-			// error
-		}
+		} 
 		
 		removeSpace();
 		writeGrammarTag("</returnStatement>", writer);
@@ -251,7 +249,6 @@ public class CompilationEngine {
 
 	private void compileNormalSubroutineCall(TokenizedFile tokenizedFile, BufferedWriter writer)
 			throws IOException, Exception {
-		writeAndAdvance(tokenizedFile, writer);
 		if (isSymbol(".")) {
 			writeAndAdvance(tokenizedFile, writer);
 			if (isSubroutineName()) {
@@ -280,6 +277,7 @@ public class CompilationEngine {
 			}
 		} else if (isSymbol(")")){
 			compileExpressionList(tokenizedFile, writer);
+			writeAndAdvance(tokenizedFile, writer);
 		} else {
 		
 			// error
@@ -412,7 +410,7 @@ public class CompilationEngine {
 			}
 			
 			if (isSymbol("}")) {
-				writeTag(writer);
+				writeAndAdvance(tokenizedFile, writer);
 			} else {
 				// error
 			}
@@ -458,7 +456,7 @@ public class CompilationEngine {
 	}
 
 	private void compileExpression(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
-		if (isIdentifier() || isKeyword() || isStringConstant() || isIntegerConstant() || isSymbol("~") || isSymbol("-")) {
+		if (isExpression(tokenizedFile)) {
 			writeGrammarTag("<expression>", writer);
 			appendSpace();
 			compileTerm(tokenizedFile, writer);
@@ -473,6 +471,23 @@ public class CompilationEngine {
 		}
 		
 	}
+	
+	private void compileOptionalExpression(TokenizedFile tokenizedFile, BufferedWriter writer) throws Exception {
+		if (isExpression(tokenizedFile)) {
+			writeGrammarTag("<expression>", writer);
+			appendSpace();
+			compileTerm(tokenizedFile, writer);
+			if (isOp()) {
+				writeAndAdvance(tokenizedFile, writer);
+				compileTerm(tokenizedFile, writer);
+			}
+			removeSpace();
+			writeGrammarTag("</expression>", writer);
+		} else {
+			// error
+		}
+	}
+	
 
 	private void compileTerm(TokenizedFile tokenizedFile, BufferedWriter writer) throws IOException, Exception {
 		writeGrammarTag("<term>", writer);
@@ -501,6 +516,7 @@ public class CompilationEngine {
 			writeAndAdvance(tokenizedFile, writer);	
 		} else if (isSymbol("-") || isSymbol("~")) {
 			writeAndAdvance(tokenizedFile, writer);
+			compileTerm(tokenizedFile, writer);
 		}
 			else {
 			// error
@@ -513,6 +529,19 @@ public class CompilationEngine {
 		writeGrammarTag("</term>", writer);
 	}
 
+	private boolean isExpression(TokenizedFile tokenizedFile) throws Exception {
+		Token peekedToken = tokenizedFile.peek();
+		return isArrayTerm(peekedToken) 
+				|| isSubroutine(peekedToken) 
+				|| isSymbol("(") 
+				|| isIntegerConstant() 
+				|| isStringConstant() 
+				|| isKeyword() 
+				|| isVarName()
+				|| isSymbol("-") 
+				|| isSymbol("~");
+	}
+	
 	private boolean isArrayTerm(Token peekedToken) {
 		return isVarName() && isSymbol("[", peekedToken);
 	}
@@ -735,6 +764,17 @@ public class CompilationEngine {
 	}
 	
 	private boolean isOp () {
-		return isSymbol("+") || isSymbol("-") || isSymbol("/") || isSymbol("*") || isSymbol("=") || isSymbol("<") || isSymbol(">") || isSymbol("|") || isSymbol("&");
+		return isSymbol("+") 
+				|| isSymbol("-") 
+				|| isSymbol("/") 
+				|| isSymbol("*") 
+				|| isSymbol("=") 
+				|| isSymbol("<") 
+				|| isSymbol(">") 
+				|| isSymbol("|") 
+				|| isSymbol("&") 
+				|| isSymbol("&lt;") 
+				|| isSymbol("&gt;")
+				|| isSymbol("&amp;");
 	}
 }

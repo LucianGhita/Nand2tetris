@@ -28,6 +28,8 @@ public class JackTokenizer {
 
 	private void tokenizeFile(String[] fileLines, Path inputPath) {
 		TokenizedFile fileTokens = new TokenizedFile(inputPath);
+		Token utilityToken = new Token();
+		boolean multilineComment = false;
 		for (var line : fileLines) {
 
 			final String regexNormalComment = "\\/\\/(?!.*\\\".*\\/\\/).*$";
@@ -36,9 +38,19 @@ public class JackTokenizer {
 			final Pattern pattern = Pattern.compile(regexNormalComment, Pattern.MULTILINE);
 			final Matcher matcher = pattern.matcher(line);
 			line = matcher.replaceAll(subst);
-
+			
+			
+			if (line.stripLeading().stripTrailing().startsWith("/*")) {
+				multilineComment = true;
+			}
+			if (multilineComment && !line.stripLeading().stripTrailing().endsWith("*/")) {
+				continue;
+			} else {
+				multilineComment = false;
+			}
 			if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/"))) {
 				if (!line.isEmpty() && !line.isBlank()) {
+					line = line.stripLeading().stripTrailing();
 					StringBuffer l = new StringBuffer();
 					boolean isString = false;
 					for (var c : line.toCharArray()) {
@@ -61,11 +73,13 @@ public class JackTokenizer {
 						// handle everything else
 						if (!Character.isWhitespace(c)) {
 							l.append(c);
-	 					} else {
+	 					} 
+						else {
 							createToken(fileTokens, l);
 	 					}
 						
 					}
+					createToken(fileTokens, l);
 					System.out.println(line.stripLeading().stripTrailing());
 				}
 			}
