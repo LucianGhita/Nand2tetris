@@ -1,6 +1,7 @@
 package nand.analyzer;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,34 +21,24 @@ public class JackTokenizer {
         if (inputPath.toFile().isFile()) {
                         tokenizeFile(getFileLines(path), inputPath);
             } else if (inputPath.toFile().isDirectory()) {
-            // handle directories
-        }
-        
+            	File[] files = inputPath.toFile().listFiles(new FileFilter() {
+					
+					@Override
+					public boolean accept(File pathname) {
+						return pathname.getName().endsWith(".jack");
+					}
+				});
+            	for (var file : files) {
+            		tokenizeFile(getFileLines(file.getAbsolutePath().toString()), file.toPath());
+            	}
+            }
         System.out.println("Finish");
     }
 
 	private void tokenizeFile(String[] fileLines, Path inputPath) {
 		TokenizedFile fileTokens = new TokenizedFile(inputPath);
-		Token utilityToken = new Token();
-		boolean multilineComment = false;
 		for (var line : fileLines) {
-
-			final String regexNormalComment = "\\/\\/(?!.*\\\".*\\/\\/).*$";
-
-			final String subst = "";
-			final Pattern pattern = Pattern.compile(regexNormalComment, Pattern.MULTILINE);
-			final Matcher matcher = pattern.matcher(line);
-			line = matcher.replaceAll(subst);
-			
-			
-			if (line.stripLeading().stripTrailing().startsWith("/*")) {
-				multilineComment = true;
-			}
-			if (multilineComment && !line.stripLeading().stripTrailing().endsWith("*/")) {
-				continue;
-			} else {
-				multilineComment = false;
-			}
+			line = line.stripLeading().stripTrailing();
 			if (!line.startsWith("//") && !line.startsWith("/**") && !line.startsWith("/*") && (!line.endsWith("*/"))) {
 				if (!line.isEmpty() && !line.isBlank()) {
 					line = line.stripLeading().stripTrailing();
@@ -134,6 +125,12 @@ public class JackTokenizer {
         File file = new File(filePath);
         try {
             String fileContents = Files.readString(file.toPath());
+            final String regexNormalComment = "\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/|\\/\\*\\*[\\s\\S]*?\\*\\//";
+			
+			final String subst = "";
+			final Pattern pattern = Pattern.compile(regexNormalComment, Pattern.MULTILINE);
+			final Matcher matcher = pattern.matcher(fileContents);
+			fileContents = matcher.replaceAll(subst);
             fileLines = fileContents.split(System.lineSeparator());
         } catch (IOException e) {
             throw new RuntimeException(e);

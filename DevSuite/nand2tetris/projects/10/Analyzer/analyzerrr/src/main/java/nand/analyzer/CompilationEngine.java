@@ -502,6 +502,7 @@ public class CompilationEngine {
 				writeAndAdvance(tokenizedFile, writer);
 			}
 		} else if (isSubroutine(peekedToken)) {
+			writeAndAdvance(tokenizedFile, writer);
 			compileNormalSubroutineCall(tokenizedFile, writer);
 		} else if (isSymbol("(")) {
 			writeAndAdvance(tokenizedFile, writer);
@@ -719,20 +720,12 @@ public class CompilationEngine {
 		return currentToken.isIdentifier();
 	}
 	
-	private String currentType(Token token) {
-		return token.getType().toString().toLowerCase();
-	}
-	
 	private boolean isKeyword(String content, Token token) {
 		return token.isKeyword() && token.getContent().equals(content);
 	}
 	
 	private boolean isSymbol(String content, Token token) {
 		return token.isSymbol() && token.getContent().equals(content);
-	}
-	
-	private boolean isIdentifier(Token token) {
-		return token.isIdentifier();
 	}
 	
 	private boolean isKeyword() {
